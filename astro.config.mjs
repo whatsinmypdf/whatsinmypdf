@@ -12,5 +12,9 @@ export default defineConfig({
   vite: {
     plugins: [tailwindcss()],
     optimizeDeps: { exclude: ['mupdf'] },
+    // mupdf uses top-level await, which requires ES-module workers (the default
+    // 'iife' worker format cannot bundle it). Matches the `{ type: 'module' }`
+    // Worker constructed in Scanner.tsx.
+    worker: { format: 'es' },
   },
 });
