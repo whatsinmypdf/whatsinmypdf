@@ -3,14 +3,30 @@ import type { ExtractedDoc, PageData, TextRun } from './types';
 
 type Rect4 = [number, number, number, number];
 
-// mupdf's stext walker hands colors back as normalized RGB floats [r,g,b] in
-// 0..1 (see colorFromNumber in mupdf.js — it always flattens the source
-// colorspace to ARGB then splits to 3 components). Pack to 0xRRGGBB.
-function packColor(color: number[]): number {
-  const r = color[0] ?? 0;
-  const g = color[1] ?? color[0] ?? 0;
-  const b = color[2] ?? color[0] ?? 0;
+// mupdf's stext walker hands colors back as normalized float components in
+// 0..1, per the source colorspace's component count — NOT always RGB (see
+// mupdf.d.ts: `Color = [number] | [number,number,number] | [number,number,number,number]`,
+// i.e. gray, RGB, or CMYK). Pack to 0xRRGGBB, converting CMYK properly so a
+// CMYK-white run (e.g. `[0,0,0,0]`) doesn't get mis-packed as black.
+export function packColor(color: number[]): number {
   const to255 = (v: number) => Math.max(0, Math.min(255, Math.round(v * 255)));
+  let r: number;
+  let g: number;
+  let b: number;
+  if (color.length === 1) {
+    const v = color[0];
+    r = g = b = v;
+  } else if (color.length === 3) {
+    [r, g, b] = color;
+  } else if (color.length === 4) {
+    const [c, m, y, k] = color;
+    r = (1 - c) * (1 - k);
+    g = (1 - m) * (1 - k);
+    b = (1 - y) * (1 - k);
+  } else {
+    // Unrecognized shape — fail toward "visible", never toward "hidden".
+    return 0x000000;
+  }
   return (to255(r) << 16) | (to255(g) << 8) | to255(b);
 }
 
@@ -60,20 +76,37 @@ function collectHiddenLayers(doc: mupdf.PDFDocument): string[] {
     if (!doc.isLayerVisible(i)) hidden.add(doc.getLayerName(i));
   }
 
-  // (2) Layers flagged hidden via usage metadata (may still be ON).
-  const ocp = doc.getTrailer().get('Root').get('OCProperties');
-  if (ocp && ocp.isDictionary()) {
-    const ocgs = ocp.get('OCGs');
-    if (ocgs && ocgs.isArray()) {
-      for (let i = 0; i < ocgs.length; i++) {
-        const ocg = ocgs.get(i).resolve();
-        if (!ocg.isDictionary()) continue;
-        if (ocgUsageHidden(ocg)) {
-          const name = ocg.get('Name');
-          hidden.add(name.isString() ? name.asString() : String(name));
+  // (2) Layers flagged hidden via usage metadata (may still be ON). Malformed
+  // OCG structures (bad trailer/catalog shape, a poisoned entry) must not sink
+  // the whole extraction — return whatever we collected so far, and let one
+  // bad entry skip rather than abort the loop.
+  try {
+    const ocp = doc.getTrailer().get('Root').get('OCProperties');
+    if (ocp && ocp.isDictionary()) {
+      const ocgs = ocp.get('OCGs');
+      if (ocgs && ocgs.isArray()) {
+        for (let i = 0; i < ocgs.length; i++) {
+          try {
+            const ocg = ocgs.get(i).resolve();
+            if (!ocg.isDictionary()) continue;
+            if (ocgUsageHidden(ocg)) {
+              const name = ocg.get('Name');
+              if (name.isString()) {
+                hidden.add(name.asString());
+              } else if (name.isName()) {
+                const n = asNameSafe(name);
+                if (n) hidden.add(n);
+              }
+              // else: not a genuine PDF string/name — skip rather than stringify garbage.
+            }
+          } catch {
+            // one bad OCG entry — skip it, keep walking the rest.
+          }
         }
       }
     }
+  } catch {
+    // malformed OCProperties walk — return whatever layers we already found.
   }
 
   return [...hidden];
@@ -200,24 +233,43 @@ export function extractDocument(data: Uint8Array): ExtractedDoc {
     const embeddedFiles = extractEmbeddedFiles(doc);
     const catalogRaw = doc.getTrailer().get('Root').resolve().toString();
 
+    const FALLBACK_BOX: Rect4 = [0, 0, 612, 792];
     const pages: PageData[] = [];
     for (let i = 0; i < doc.countPages(); i++) {
       const page = doc.loadPage(i);
       try {
-        const pobj = page.getObject();
-        const mediabox = objToRect(pobj.getInheritable('MediaBox'), [0, 0, 612, 792]);
-        // Per the fixed interface: cropbox equals mediabox when the page dict
-        // has no CropBox of its own.
-        const cropbox = objToRect(pobj.get('CropBox'), mediabox);
+        // A throw anywhere in this page's body (malformed page dict, a stext
+        // walk that trips on adversarial content, an undecodable stream) must
+        // not abort extraction of the rest of the document — fall back to an
+        // empty-but-valid PageData for this page and keep going.
+        try {
+          const pobj = page.getObject();
+          const mediabox = objToRect(pobj.getInheritable('MediaBox'), FALLBACK_BOX);
+          // Per the fixed interface: cropbox equals mediabox when the page dict
+          // has no CropBox of its own.
+          const cropbox = objToRect(pobj.get('CropBox'), mediabox);
 
-        const runs = extractRuns(page);
-        const contentStreams = extractContentStreams(pobj);
-        const annotations = page.getAnnotations().map((a: mupdf.PDFAnnotation) => ({
-          type: String(a.getType()),
-          content: String(a.getContents()),
-        }));
+          const runs = extractRuns(page);
+          const contentStreams = extractContentStreams(pobj);
+          const annotations: { type: string; content: string }[] = [];
+          for (const a of page.getAnnotations()) {
+            try {
+              annotations.push({ type: String(a.getType()), content: String(a.getContents()) });
+            } catch {
+              // one bad annotation — skip it, keep the rest of the page.
+            }
+          }
 
-        pages.push({ runs, mediabox, cropbox, contentStreams, annotations });
+          pages.push({ runs, mediabox, cropbox, contentStreams, annotations });
+        } catch {
+          pages.push({
+            runs: [],
+            mediabox: FALLBACK_BOX,
+            cropbox: FALLBACK_BOX,
+            contentStreams: [],
+            annotations: [],
+          });
+        }
       } finally {
         page.destroy();
       }

@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, it, expect } from 'vitest';
-import { extractDocument } from '../../src/lib/scanner/mupdfAdapter';
+import { extractDocument, packColor } from '../../src/lib/scanner/mupdfAdapter';
 
 const load = (n: string) => new Uint8Array(readFileSync(`tests/fixtures/${n}`));
 
@@ -72,5 +72,39 @@ describe('extractDocument', () => {
       const doc = extractDocument(load(f));
       expect(doc.pages.length).toBeGreaterThanOrEqual(1);
     }
+  });
+});
+
+describe('packColor', () => {
+  it('packs gray-white [1] to 0xffffff', () => {
+    expect(packColor([1])).toBe(0xffffff);
+  });
+
+  it('packs gray-black [0] to 0x000000', () => {
+    expect(packColor([0])).toBe(0x000000);
+  });
+
+  it('packs rgb-white [1,1,1] to 0xffffff', () => {
+    expect(packColor([1, 1, 1])).toBe(0xffffff);
+  });
+
+  it('packs CMYK-white [0,0,0,0] to 0xffffff (must not be mis-read as RGB black)', () => {
+    expect(packColor([0, 0, 0, 0])).toBe(0xffffff);
+  });
+
+  it('packs CMYK-black [0,0,0,1] to 0x000000', () => {
+    expect(packColor([0, 0, 0, 1])).toBe(0x000000);
+  });
+
+  it('falls back to 0x000000 (visible) for an empty/unrecognized array', () => {
+    expect(packColor([])).toBe(0x000000);
+  });
+
+  it('falls back to 0x000000 (visible) for a 2-element garbage array', () => {
+    expect(packColor([1, 1])).toBe(0x000000);
+  });
+
+  it('clamps and rounds out-of-range components', () => {
+    expect(packColor([1.5, -0.2, 0.5])).toBe((255 << 16) | (0 << 8) | 128);
   });
 });
