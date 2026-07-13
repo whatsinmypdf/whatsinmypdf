@@ -27,3 +27,34 @@ export interface ExtractedDoc {
   embeddedFiles: { name: string; size: number }[];
   catalogRaw: string; // PDF-syntax text of the catalog object
 }
+
+// ---- ScanReport side (Task 5). FIXED shape: Task 6's UI consumes these
+// verbatim, so do not rename fields or change CategoryId membership. ----
+
+export type CategoryId =
+  | 'near_white_text'
+  | 'invisible_render_mode'
+  | 'tiny_font'
+  | 'outside_cropbox'
+  | 'cropbox_mismatch'
+  | 'hidden_layers'
+  | 'embedded_files'
+  | 'javascript'
+  | 'annotations'
+  | 'prompt_injection';
+
+export interface Finding {
+  category: CategoryId;
+  page?: number; // 1-based
+  text?: string; // offending text, truncated to 200 chars
+  detail?: string; // e.g. "#FFFFFF, 11pt" / layer name / severity+description
+}
+
+export interface ScanReport {
+  fileName: string;
+  pages: number;
+  producer: string;
+  creator: string;
+  counts: Record<CategoryId, number> & { total: number };
+  findings: Finding[];
+}
