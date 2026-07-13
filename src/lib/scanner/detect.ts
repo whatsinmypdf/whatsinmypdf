@@ -145,7 +145,7 @@ function detectPage(page: PageData, pageNum: number, findings: Finding[]): void 
   // Prompt-injection scan: visible page text + annotation content, scanned
   // as two separate sources (matches scan_pdf.py:225-243).
   const body = page.runs.map((r) => r.text).join('\n');
-  const annotText = page.annotations.map((a) => a.content).join('\n');
+  const annotText = page.annotations.map((a) => a.content.trim().slice(0, 200)).join('\n');
   const sources: [string, string][] = [
     ['body', body],
     ['annotation', annotText],
