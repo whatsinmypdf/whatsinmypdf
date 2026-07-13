@@ -1,0 +1,25 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+---
+<BaseLayout
+  title="Privacy — PDF Stowaway Scanner"
+  description="No upload, no storage, no tracking of file contents. PDF Stowaway Scanner processes every file locally in your browser."
+  pathname="/privacy"
+>
+  <section class="container max-w-2xl py-16">
+    <h1 class="text-3xl font-bold">Privacy</h1>
+    <p class="mt-6 text-muted-foreground">
+      No upload, no storage, no tracking of file contents. When you open a PDF with this tool, it
+      is read and scanned entirely inside your browser. The file is never sent to a server, never
+      written to disk by us, and never inspected by anyone but you.
+    </p>
+    <p class="mt-4 text-muted-foreground">
+      We don't run analytics that read or record what's inside your documents. Standard,
+      privacy-respecting site analytics (page views, not file contents) may be used to understand
+      traffic, and can be disabled in your browser without affecting the scanner.
+    </p>
+    <p class="mt-4 text-muted-foreground">
+      If you have questions about this policy, open an issue on the project's GitHub repository.
+    </p>
+  </section>
+</BaseLayout>

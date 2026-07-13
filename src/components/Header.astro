@@ -1,0 +1,28 @@
+---
+export interface Props {
+  pathname: string;
+}
+
+const { pathname } = Astro.props;
+const navItems = [
+  { href: '/', label: 'Scanner' },
+  { href: '/learn', label: 'Learn' },
+  { href: '/about', label: 'About' },
+];
+---
+<header class="border-b border-border">
+  <div class="container flex items-center justify-between py-4">
+    <a href="/" class="text-lg font-bold">PDF Stowaway Scanner</a>
+    <nav class="flex gap-6">
+      {navItems.map((item) => (
+        <a
+          href={item.href}
+          class="text-sm font-medium"
+          aria-current={pathname === item.href ? 'page' : undefined}
+        >
+          {item.label}
+        </a>
+      ))}
+    </nav>
+  </div>
+</header>
