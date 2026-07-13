@@ -46,7 +46,7 @@ If you want to chase layers by hand, some desktop viewers expose them. In Adobe 
 
 The thorough way to check a PDF is to read its structure directly instead of trusting what any viewer chooses to display. A structural scan walks the text layer run by run and inspects the properties the eye cannot judge: the exact fill color against the page background, the point size, the coordinates relative to the crop box, the render mode, the layer each run belongs to, plus the parts of the file that never render at all — embedded attachments, JavaScript, and annotation contents.
 
-That is what this site's scanner does. You drop a PDF in, and it decodes the file and reports every run of text that is invisible or near-invisible, every layer that is hidden, and any text matching known instructions aimed at AI readers. It reads properties, not pixels, so white-on-white, zero-opacity, render-mode-3, off-page, and tiny-font text all surface the same way — with the actual hidden words quoted and the page number listed, so you can judge each finding yourself.
+That is what this site's scanner does. You drop a PDF in, and it decodes the file and reports every run of text that is invisible or near-invisible, every layer that is hidden, and any text matching known instructions aimed at AI readers. It reads properties, not pixels, so white-on-white, render-mode-3, off-page, and tiny-font text all surface the same way — with the actual hidden words quoted and the page number listed, so you can judge each finding yourself.
 
 It runs entirely in your browser. The file is decoded locally in a WebAssembly sandbox and never uploaded, which matters when the document you are checking is a contract, a résumé you received, or an unpublished paper you are reviewing.
 
