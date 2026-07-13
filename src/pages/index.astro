@@ -1,11 +1,79 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import Scanner from '@/components/Scanner.tsx';
+import { CATEGORIES } from '@/lib/scanner/categories';
+
+const categories = Object.values(CATEGORIES);
+
+const steps = [
+  {
+    title: 'Drop your file',
+    body: 'Drag a PDF onto the box or click to choose one. No account, no sign-up, no size gymnastics.',
+  },
+  {
+    title: 'Scanned locally in your browser',
+    body: 'The file is decoded and analyzed on your own device using WebAssembly. It is never uploaded to any server.',
+  },
+  {
+    title: 'Read the evidence',
+    body: 'Every piece of hidden or near-invisible text is listed with its page number and content, so you can judge each finding yourself.',
+  },
+];
+
+// Single source of truth for the FAQ: the visible section and the FAQPage
+// JSON-LD are both rendered from this array, so their text can never drift.
+const faqs = [
+  {
+    question: 'Is my file uploaded?',
+    answer:
+      'No. The scanner runs entirely in your browser using WebAssembly. Your PDF is decoded and analyzed locally on your own device and is never uploaded to any server. Nothing leaves your browser.',
+  },
+  {
+    question: 'What can it miss?',
+    answer:
+      'It reads the PDF’s text layer and structure, so it cannot see text that exists only as part of an image — a scanned page or a screenshot has no text layer to inspect. It can also miss instructions phrased obscurely enough to slip past known patterns. A clean result lowers the risk but does not prove a file is safe.',
+  },
+  {
+    question: 'Why is it free and open source?',
+    answer:
+      'Checking a document for hidden content should not require trusting a stranger’s server with your file. Keeping the tool free and open source means anyone can verify that it does what it claims and that nothing is uploaded. There is no account, no paywall, and no data collection.',
+  },
+  {
+    question: 'Can I use it for résumés and papers?',
+    answer:
+      'Yes — those are two of the most common cases. You can check a résumé you received for hidden keywords, or scan an academic paper, contract, or report for text and instructions aimed at an AI reviewer or summarizer, all before you pass the file to any automated tool.',
+  },
+];
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'SoftwareApplication',
+      name: 'PDF Stowaway Scanner',
+      applicationCategory: 'SecurityApplication',
+      operatingSystem: 'Web browser',
+      url: new URL('/', Astro.site).href,
+      description:
+        'Scan any PDF for hidden text, invisible layers, and prompt-injection attempts aimed at AI reviewers. Runs entirely in your browser — files never leave your device.',
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    },
+    {
+      '@type': 'FAQPage',
+      mainEntity: faqs.map((f) => ({
+        '@type': 'Question',
+        name: f.question,
+        acceptedAnswer: { '@type': 'Answer', text: f.answer },
+      })),
+    },
+  ],
+};
 ---
 <BaseLayout
   title="PDF Stowaway Scanner — Find hidden content in PDFs, free and local"
   description="Scan any PDF for hidden text, invisible layers, and prompt-injection attempts aimed at AI reviewers. 100% local — files never leave your browser."
   pathname="/"
+  jsonLd={jsonLd}
 >
   <section class="container py-16 sm:py-20">
     <div class="mx-auto max-w-2xl text-center">
@@ -23,6 +91,66 @@ import Scanner from '@/components/Scanner.tsx';
 
     <div class="mt-12">
       <Scanner client:load />
+    </div>
+  </section>
+
+  <!-- How it works -->
+  <section class="border-t border-border bg-card">
+    <div class="container py-16">
+      <h2 class="text-center text-2xl font-bold tracking-tight">How it works</h2>
+      <ol class="mx-auto mt-10 grid max-w-4xl gap-8 sm:grid-cols-3">
+        {steps.map((step, i) => (
+          <li class="text-center sm:text-left">
+            <span class="font-mono text-sm font-bold text-primary">
+              {String(i + 1).padStart(2, '0')}
+            </span>
+            <h3 class="mt-2 text-lg font-semibold">{step.title}</h3>
+            <p class="mt-2 text-sm text-muted-foreground">{step.body}</p>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+
+  <!-- What we detect -->
+  <section class="container py-16">
+    <div class="mx-auto max-w-2xl text-center">
+      <h2 class="text-2xl font-bold tracking-tight">What we detect</h2>
+      <p class="mt-3 text-muted-foreground">
+        Ten kinds of hidden content, read from the file's structure rather than its rendered page.
+      </p>
+    </div>
+    <div class="mx-auto mt-10 grid max-w-4xl gap-4 sm:grid-cols-2">
+      {categories.map((cat) => (
+        <div class="rounded-lg border border-border bg-card p-5">
+          <div class="flex items-center gap-2">
+            <h3 class="font-semibold">{cat.title}</h3>
+            {cat.strongSignal && (
+              <span class="rounded-full bg-danger/10 px-2 py-0.5 font-mono text-[0.65rem] uppercase tracking-wider text-danger">
+                Strong signal
+              </span>
+            )}
+          </div>
+          <p class="mt-2 text-sm text-muted-foreground">{cat.explanation}</p>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="border-t border-border bg-card">
+    <div class="container py-16">
+      <div class="mx-auto max-w-2xl">
+        <h2 class="text-2xl font-bold tracking-tight">Frequently asked questions</h2>
+        <dl class="mt-8 space-y-8">
+          {faqs.map((faq) => (
+            <div class="border-t border-border pt-6 first:border-t-0 first:pt-0">
+              <dt class="font-semibold">{faq.question}</dt>
+              <dd class="mt-2 text-muted-foreground">{faq.answer}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
     </div>
   </section>
 </BaseLayout>
