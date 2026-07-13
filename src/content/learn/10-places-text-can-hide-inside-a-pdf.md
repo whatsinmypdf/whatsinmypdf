@@ -22,7 +22,7 @@ Text set below about four points is too small to read on screen or in print, yet
 
 ## 4. Off-page text
 
-Text can be positioned outside the visible crop area — beyond the edges of the page as it is displayed and printed — so it never shows up when the document is viewed. It is common and benign in scanned or OCR-trimmed files, where margins get cut. Outside of that, text living past the page boundary is worth a look.
+Text can be positioned outside the visible crop area — beyond the edges of the page as it is displayed and printed — so it never shows up when the document is viewed. It is common and benign in scanned or OCR-trimmed files, where margins get cut. Outside of that, text living past the page boundary is worth a look. There's a catch for detection, though: text that sits fully outside the crop box is clipped by the PDF engine before extraction ever sees it, so a scan can't pull it out and quote it the way it can the other nine categories here. What the scanner flags instead is the crop box mismatch that usually rides along with this trick — the page's crop area cropped smaller than its full media size — which is worth inspecting even though the cropped-off text itself stays out of reach.
 
 ## 5. Crop box mismatch
 

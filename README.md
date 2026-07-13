@@ -27,8 +27,8 @@ See `LICENSE`.
 
 The detection logic in `src/lib/scanner/` (`detect.ts`, `patterns.ts`,
 `mupdfAdapter.ts`) is a TypeScript/WASM port of a Python reference
-implementation: `~/.claude/skills/pdf-stowaway-scanner/scripts/scan_pdf.py`
-(PyMuPDF-based). The ten finding categories, thresholds, and injection-pattern
+implementation: a local PyMuPDF-based scanner script (`scan_pdf.py`) this
+project derives from. The ten finding categories, thresholds, and injection-pattern
 list are intentionally kept in parity with that script so the two
 implementations agree on the same input file. `tests/fixtures/EXPECTED.md`
 documents a few places where perfect parity wasn't reachable (e.g.
@@ -42,8 +42,8 @@ pnpm install
 pnpm dev        # local dev server
 pnpm build      # static build to dist/
 pnpm preview    # serve the built dist/ locally
-pnpm test       # vitest unit tests (68/68 as of this writing)
-pnpm e2e        # playwright e2e tests (3/3 as of this writing)
+pnpm test       # vitest unit tests (all passing)
+pnpm e2e        # playwright e2e tests (all passing)
 ```
 
 ## Regenerating test fixtures

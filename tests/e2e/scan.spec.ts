@@ -26,9 +26,13 @@ test('no network request carries the PDF, and WASM only loads after a scan is re
 }) => {
   const posts: string[] = [];
   const wasmRequests: string[] = [];
+  const nonLocalRequests: string[] = [];
   page.on('request', (r) => {
     if (r.method() !== 'GET') posts.push(r.url());
     if (r.url().includes('.wasm')) wasmRequests.push(r.url());
+    // Catches GET-querystring exfiltration too, not just POST bodies: every
+    // request during the scan flow must stay on localhost.
+    if (new URL(r.url()).hostname !== 'localhost') nonLocalRequests.push(r.url());
   });
 
   await page.goto('/');
@@ -49,4 +53,5 @@ test('no network request carries the PDF, and WASM only loads after a scan is re
 
   expect(posts).toEqual([]);
   expect(wasmRequests.length).toBeGreaterThan(0);
+  expect(nonLocalRequests).toEqual([]);
 });

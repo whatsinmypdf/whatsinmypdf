@@ -46,7 +46,7 @@ If you want to chase layers by hand, some desktop viewers expose them. In Adobe 
 
 The thorough way to check a PDF is to read its structure directly instead of trusting what any viewer chooses to display. A structural scan walks the text layer run by run and inspects the properties the eye cannot judge: the exact fill color against the page background, the point size, the coordinates relative to the crop box, the render mode, the layer each run belongs to, plus the parts of the file that never render at all — embedded attachments, JavaScript, and annotation contents.
 
-That is what this site's scanner does. You drop a PDF in, and it decodes the file and reports every run of text that is invisible or near-invisible, every layer that is hidden, and any text matching known instructions aimed at AI readers. It reads properties, not pixels, so white-on-white, render-mode-3, off-page, and tiny-font text all surface the same way — with the actual hidden words quoted and the page number listed, so you can judge each finding yourself.
+That is what this site's scanner does. You drop a PDF in, and it decodes the file and reports every run of text that is invisible or near-invisible, every layer that is hidden, and any text matching known instructions aimed at AI readers. It reads properties, not pixels, so white-on-white, render-mode-3, and tiny-font text all surface the same way — with the actual hidden words quoted and the page number listed, so you can judge each finding yourself. Text cropped fully off the page is the one exception: the PDF engine clips it before extraction ever sees it, so there is nothing to quote. What the scan reports instead is the crop box mismatch that goes along with it — the page's crop area is smaller than its full media size, a sign that something was trimmed out of view.
 
 It runs entirely in your browser. The file is decoded locally in a WebAssembly sandbox and never uploaded, which matters when the document you are checking is a contract, a résumé you received, or an unpublished paper you are reviewing.
 
@@ -54,7 +54,7 @@ It runs entirely in your browser. The file is decoded locally in a WebAssembly s
 
 1. **Select all, copy, paste** into a text editor. Read what comes out and compare it to the page.
 2. If your viewer has a **Layers** panel, turn every layer on and re-read.
-3. **Run a structural scan** to catch off-page text, hidden layers, tiny fonts, render-mode tricks, and injection patterns the manual pass cannot see.
+3. **Run a structural scan** to catch crop box mismatches (the sign left behind when content is cropped off the page), hidden layers, tiny fonts, render-mode tricks, and injection patterns the manual pass cannot see.
 4. **Read the flagged text in context.** Not every finding is malicious — a trimmed scan or a legitimate figure callout can trip a detector — but every finding is text someone put in the file and kept off the page.
 
 No single check is complete on its own, and even a clean structural scan does not prove a file is safe: text baked into an image, for instance, is invisible to text-layer analysis. But the combination of a copy-paste test and a structural scan will catch the overwhelming majority of hidden-text tricks in circulation, and it takes a minute.

@@ -1,6 +1,8 @@
 {
   "name": "pdfstowaway",
   "type": "module",
+  "description": "Scan a PDF for hidden text, invisible layers, and prompt-injection attempts, entirely in your browser.",
+  "license": "AGPL-3.0-or-later",
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",

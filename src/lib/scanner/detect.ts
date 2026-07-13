@@ -60,10 +60,10 @@ function sameBox(a: Rect4, b: Rect4): boolean {
 // least one axis? Ported verbatim from scan_pdf.py:205
 // (`bx1 <= cb.x0 or bx0 >= cb.x1 or by1 <= cb.y0 or by0 >= cb.y1`).
 //
-// COORDINATE-SPACE CAVEAT (Task 3 spike, see task-3-report.md "spike
-// findings"): stext run bboxes are y-down page space while mediabox/cropbox
-// arrays are y-up PDF space. This function is a pure geometric separation
-// test over whatever single coordinate space its two arguments are given in
+// COORDINATE-SPACE CAVEAT: stext run bboxes are y-down page space while
+// mediabox/cropbox arrays are y-up PDF space. This function is a pure
+// geometric separation test over whatever single coordinate space its two
+// arguments are given in
 // — it does not itself reconcile the two spaces. Callers (below, and the
 // hand-built unit tests) must supply bbox/cropbox already expressed in one
 // consistent space for the predicate's result to be meaningful. On real

@@ -38,7 +38,7 @@ export const CATEGORIES: Record<CategoryId, CategoryInfo> = {
   outside_cropbox: {
     title: 'Off-page text',
     explanation:
-      'Text positioned outside the visible crop area, so it never appears when the page is viewed or printed. Common only in scanned or OCR-trimmed documents; otherwise worth a look.',
+      'Content hidden by cropping is surfaced through the crop box mismatch check below. Text that sits fully outside the visible page area is clipped by PDF engines — this one included — before it ever reaches text extraction, so it cannot be quoted directly here.',
     falsePositiveRisk: 'low',
     strongSignal: false,
   },
@@ -82,6 +82,6 @@ export const CATEGORIES: Record<CategoryId, CategoryInfo> = {
     explanation:
       'Text matching known patterns that try to steer an AI reviewer or summarizer — for example, telling it to ignore its instructions or return a positive verdict. Suggestive, not conclusive: a paper about prompt injection may quote such strings legitimately, so read the surrounding context.',
     falsePositiveRisk: 'low',
-    strongSignal: true,
+    strongSignal: false,
   },
 };

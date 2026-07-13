@@ -6,6 +6,7 @@ import type { WorkerRequest, WorkerResponse } from '../lib/scanner/worker';
 import ReportView from './ReportView';
 
 const MAX_BYTES = 100 * 1024 * 1024; // 100 MB
+const WATCHDOG_MS = 90 * 1000; // 90s — terminate a stuck scan rather than leave the user stranded
 
 type State =
   | { phase: 'idle' }
@@ -25,8 +26,13 @@ export default function Scanner() {
   const [dragOver, setDragOver] = useState(false);
   const workerRef = useRef<Worker | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const watchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const terminateWorker = useCallback(() => {
+    if (watchdogRef.current !== null) {
+      clearTimeout(watchdogRef.current);
+      watchdogRef.current = null;
+    }
     workerRef.current?.terminate();
     workerRef.current = null;
   }, []);
@@ -66,6 +72,13 @@ export default function Scanner() {
         type: 'module',
       });
       workerRef.current = worker;
+      watchdogRef.current = setTimeout(() => {
+        terminateWorker();
+        setState({
+          phase: 'error',
+          message: 'Scan timed out. The file may be malformed or too complex.',
+        });
+      }, WATCHDOG_MS);
 
       worker.onmessage = (e: MessageEvent<WorkerResponse>) => {
         const msg = e.data;
@@ -191,6 +204,17 @@ export default function Scanner() {
             <p className="mt-3 text-xs text-muted-foreground">
               Everything runs on this page. Nothing is uploaded.
             </p>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                reset();
+              }}
+              className="mt-4 text-sm font-medium text-primary underline underline-offset-2"
+            >
+              Cancel
+            </button>
           </>
         ) : (
           <>
