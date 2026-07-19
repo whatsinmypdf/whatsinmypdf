@@ -188,6 +188,68 @@ for (const { fixture, groups } of CATEGORY_SWEEP) {
   });
 }
 
+// "Try an example" demo buttons (Scanner.tsx DEMOS): same-origin fetch of
+// public/demo/*.pdf, fed through the identical scan path as a user-picked
+// file. Titles/ids are copied from src/lib/scanner/categories.ts, scoped the
+// same way as CATEGORY_SWEEP above to prove the group came from a real scan.
+const DEMO_SWEEP: { button: string; groups: { id: string; title: string }[] }[] = [
+  {
+    button: 'Résumé with hidden instructions',
+    groups: [
+      { id: 'near_white_text', title: 'Near-white text' },
+      { id: 'tiny_font', title: 'Tiny font' },
+      { id: 'prompt_injection', title: 'Prompt injection' },
+    ],
+  },
+  {
+    button: 'Report with a hidden layer',
+    groups: [
+      { id: 'hidden_layers', title: 'Hidden layers' },
+      { id: 'invisible_render_mode', title: 'Invisible render mode' },
+    ],
+  },
+];
+
+for (const { button, groups } of DEMO_SWEEP) {
+  test(`"${button}" example button renders its expected category group(s)`, async ({ page }) => {
+    await gotoReady(page);
+    await page.getByRole('button', { name: button, exact: true }).click();
+
+    for (const { id, title } of groups) {
+      const group = page
+        .locator('section.overflow-hidden')
+        .filter({ has: page.getByText(id, { exact: true }) });
+      await expect(group).toBeVisible({ timeout: 30_000 });
+      await expect(group.getByRole('heading', { level: 3, name: title })).toBeVisible();
+    }
+  });
+}
+
+test('the résumé example scan carries no upload — only same-origin GET requests, no websockets', async ({
+  page,
+}) => {
+  const posts: string[] = [];
+  const nonLocalRequests: string[] = [];
+  const websockets: string[] = [];
+  page.on('request', (r) => {
+    if (r.method() !== 'GET') posts.push(r.url());
+    if (new URL(r.url()).hostname !== 'localhost') nonLocalRequests.push(r.url());
+  });
+  page.on('websocket', (ws) => websockets.push(ws.url()));
+
+  await gotoReady(page);
+  await page
+    .getByRole('button', { name: 'Résumé with hidden instructions', exact: true })
+    .click();
+  await expect(page.getByText('prompt_injection', { exact: true })).toBeVisible({
+    timeout: 30_000,
+  });
+
+  expect(posts).toEqual([]);
+  expect(nonLocalRequests).toEqual([]);
+  expect(websockets).toEqual([]);
+});
+
 test('cancelling a scan and immediately uploading a second file always shows the second file\'s report (generation-counter regression, P0-2)', async ({
   page,
 }) => {

@@ -65,3 +65,7 @@ Fixtures are count-stable (regenerating produces PDFs with the same findings
 and the same per-category counts) but not byte-reproducible — PyMuPDF embeds
 a `CreationDate` timestamp in each saved PDF, so the file bytes (and hashes)
 differ between runs even though the content and detected findings don't.
+
+The two "try an example" demo files under `public/demo/` are generated the
+same way — `uv run --with pymupdf python scripts/make_demo_pdfs.py` — and
+that script is likewise idempotent, skipping any file that already exists.
