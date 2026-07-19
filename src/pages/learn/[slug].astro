@@ -27,14 +27,14 @@ const jsonLd = {
   headline: entry.data.title,
   description: entry.data.description,
   datePublished: entry.data.pubDate.toISOString(),
-  author: { '@type': 'Organization', name: 'PDF Stowaway Scanner' },
-  publisher: { '@type': 'Organization', name: 'PDF Stowaway Scanner' },
+  author: { '@type': 'Organization', name: 'WhatsInMyPDF' },
+  publisher: { '@type': 'Organization', name: 'WhatsInMyPDF' },
   mainEntityOfPage: new URL(pathname, Astro.site).href,
   image: new URL('/og.png', Astro.site).href,
 };
 ---
 <BaseLayout
-  title={`${entry.data.title} — PDF Stowaway Scanner`}
+  title={`${entry.data.title} — WhatsInMyPDF`}
   description={entry.data.description}
   pathname={pathname}
   jsonLd={jsonLd}

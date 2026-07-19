@@ -178,7 +178,7 @@ export default function Scanner() {
     const a = document.createElement('a');
     a.href = url;
     const base = report.fileName.replace(/\.pdf$/i, '') || 'report';
-    a.download = `${base}.stowaway-report.json`;
+    a.download = `${base}.whatsinmypdf-report.json`;
     a.click();
     URL.revokeObjectURL(url);
   }, []);

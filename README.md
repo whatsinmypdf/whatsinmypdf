@@ -1,4 +1,4 @@
-# PDF Stowaway Scanner
+# WhatsInMyPDF
 
 Find hidden content in PDFs — white-on-white text, invisible render modes, tiny
 fonts, hidden layers, embedded files/JavaScript, and prompt-injection phrasing

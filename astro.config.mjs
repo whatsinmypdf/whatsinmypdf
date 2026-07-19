@@ -4,7 +4,7 @@ import sitemap from '@astrojs/sitemap';
 import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
-  site: 'https://pdfstowaway.pages.dev',
+  site: 'https://whatsinmypdf.com',
   output: 'static',
   trailingSlash: 'never',
   build: { format: 'file' },
