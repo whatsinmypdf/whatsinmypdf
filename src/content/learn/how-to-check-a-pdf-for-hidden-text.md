@@ -59,4 +59,6 @@ It runs entirely in your browser. The file is decoded locally in a WebAssembly s
 
 No single check is complete on its own, and even a clean structural scan does not prove a file is safe: text baked into an image, for instance, is invisible to text-layer analysis. But the combination of a copy-paste test and a structural scan will catch the overwhelming majority of hidden-text tricks in circulation, and it takes a minute.
 
+For a full rundown of where this text tends to hide, see [10 places text can hide inside a PDF](/learn/10-places-text-can-hide-inside-a-pdf). And if what you find looks like it is trying to steer an AI reader rather than just hide from a human one, [PDF prompt injection](/learn/pdf-prompt-injection) explains what that phrasing looks like and why it exists.
+
 Want to check a file right now? [Scan a PDF for hidden text with the tool on the homepage.](/) It runs locally, and nothing leaves your browser.

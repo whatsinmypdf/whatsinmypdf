@@ -1,6 +1,6 @@
 ---
 title: 10 Places Text Can Hide Inside a PDF
-description: A tour of the ten spots where a PDF can keep text — or whole payloads — off the page while leaving it fully readable to software, and how to tell a benign case from a deliberate one.
+description: A tour of the ten places a PDF can keep text or payloads off the page while leaving it readable to software — and how to spot a deliberate one.
 pubDate: 2026-07-07
 ---
 
@@ -55,5 +55,7 @@ Notice how the ten split into two groups. A few — near-white text, invisible r
 A structural scan is the tool for this because it reads properties the eye cannot: exact fill colors, point sizes, coordinates against the crop box, render modes, layer membership, and the non-rendering parts of the file — attachments, scripts, annotation contents. It surfaces all ten places at once and quotes what it finds.
 
 Two honest limits are worth stating. First, a clean scan does not prove a file is safe: text baked into an **image** has no text layer to inspect, and a payload can be **phrased obscurely** enough to slip a pattern list while a model still understands it. Second, findings are evidence, not verdicts — the file's structure tells you *where* and *what*, and you supply the judgment.
+
+Two of these ten deserve a closer look on their own. Near-white text is the mechanism behind [the white-font résumé trick](/learn/white-font-resume-trick), and prompt-injection patterns are the subject of [a dedicated look at hidden instructions aimed at AI reviewers](/learn/pdf-prompt-injection). If you would rather work through checks by hand before reaching for a scanner, [how to check a PDF for hidden text](/learn/how-to-check-a-pdf-for-hidden-text) covers the manual methods first.
 
 Curious what is hiding in a specific file? [Run it through the scanner on the homepage.](/) It checks all ten of these locally in your browser, quotes anything it finds, and never uploads your file.

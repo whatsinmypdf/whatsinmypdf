@@ -30,6 +30,7 @@ const jsonLd = {
   author: { '@type': 'Organization', name: 'PDF Stowaway Scanner' },
   publisher: { '@type': 'Organization', name: 'PDF Stowaway Scanner' },
   mainEntityOfPage: new URL(pathname, Astro.site).href,
+  image: new URL('/og.png', Astro.site).href,
 };
 ---
 <BaseLayout

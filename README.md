@@ -16,6 +16,8 @@ This isn't just a claim in the copy: `tests/e2e/scan.spec.ts` includes a test
 requested") that asserts on the page's actual network traffic during a scan.
 If a future change accidentally introduced an upload, that test would fail.
 
+The site ships with no analytics or tracking scripts of any kind.
+
 ## License
 
 AGPL-3.0-or-later. This is required because the scanner bundles mupdf's WASM

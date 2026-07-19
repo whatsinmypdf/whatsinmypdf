@@ -17,8 +17,9 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
     </p>
     <p class="mt-4 text-muted-foreground">
       PDF Stowaway Scanner checks a PDF for these techniques: invisible render modes, white-on-white
-      text, tiny fonts, crop box mismatches (the signal left behind when content is cropped off the
-      page), hidden optical content groups, embedded files, JavaScript, and known prompt-injection
+      text, tiny fonts, text positioned off the page, crop box mismatches (the signal left behind
+      when content is cropped off the page), hidden optical content groups, embedded files,
+      JavaScript, annotations whose text hides in the file structure, and known prompt-injection
       phrasing. Everything runs in your browser using WebAssembly. Your file is never uploaded
       anywhere.
     </p>

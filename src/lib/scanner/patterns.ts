@@ -5,8 +5,7 @@
  *
  * Each pattern is compiled with the `i` flag to mirror Python's
  * `re.IGNORECASE`. `findInjections` mirrors the injection-scan block at
- * lines 229-243: find all matches, take a +/-40-char context snippet with
- * newlines replaced by spaces.
+ * lines 229-243: find all matches.
  */
 
 export interface InjectionPattern {
@@ -19,7 +18,6 @@ export interface InjectionHit {
   severity: 'high' | 'medium';
   description: string;
   match: string;
-  context: string;
 }
 
 export const INJECTION_PATTERNS: InjectionPattern[] = [
@@ -89,9 +87,7 @@ export const INJECTION_PATTERNS: InjectionPattern[] = [
  * Scan `text` for all configured injection patterns.
  *
  * For each pattern, all non-overlapping matches are collected (equivalent to
- * Python's `rx.finditer`). Context is `[match.start - 40, match.end + 40]`
- * (clamped to the string bounds) with newlines replaced by spaces, matching
- * the reference implementation's snippet logic.
+ * Python's `rx.finditer`).
  */
 export function findInjections(text: string): InjectionHit[] {
   const hits: InjectionHit[] = [];
@@ -102,15 +98,10 @@ export function findInjections(text: string): InjectionHit[] {
     // safely drive iteration itself.
     const globalRx = new RegExp(rx.source, rx.flags.includes('g') ? rx.flags : rx.flags + 'g');
     for (const m of text.matchAll(globalRx)) {
-      const start = m.index ?? 0;
-      const end = start + m[0].length;
-      const snippetStart = Math.max(0, start - 40);
-      const snippetEnd = Math.min(text.length, end + 40);
       hits.push({
         severity,
         description,
         match: m[0],
-        context: text.slice(snippetStart, snippetEnd).replace(/\n/g, ' '),
       });
     }
   }

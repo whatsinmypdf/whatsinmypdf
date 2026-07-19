@@ -20,12 +20,6 @@ describe('findInjections', () => {
     expect(findInjections('We review prior work on instruction tuning.')).toEqual([]);
   });
 
-  it('provides trimmed context around the match', () => {
-    const long = 'x'.repeat(100) + ' ignore previous instructions ' + 'y'.repeat(100);
-    const [hit] = findInjections(long);
-    expect(hit.context.length).toBeLessThanOrEqual(hit.match.length + 80);
-  });
-
   // --- Additional coverage: remaining patterns not exercised above ---
 
   it('detects disregard-previous-instructions variant precisely', () => {

@@ -31,12 +31,12 @@ const faqs = [
   {
     question: 'What can it miss?',
     answer:
-      'It reads the PDF’s text layer and structure, so it cannot see text that exists only as part of an image — a scanned page or a screenshot has no text layer to inspect. It can also miss instructions phrased obscurely enough to slip past known patterns. A clean result lowers the risk but does not prove a file is safe.',
+      "It reads the PDF's text layer and structure, so it cannot see text that exists only as part of an image — a scanned page or a screenshot has no text layer to inspect. It can also miss instructions phrased obscurely enough to slip past known patterns. A clean result lowers the risk but does not prove a file is safe.",
   },
   {
     question: 'Why is it free and open source?',
     answer:
-      'Checking a document for hidden content should not require trusting a stranger’s server with your file. Keeping the tool free and open source means anyone can verify that it does what it claims and that nothing is uploaded. There is no account and no paywall. If page-view analytics are ever enabled, they count page views only — file contents never leave your browser.',
+      "Checking a document for hidden content should not require trusting a stranger's server with your file. Keeping the tool free and open source means anyone can verify that it does what it claims and that nothing is uploaded. There is no account and no paywall. The site currently runs no analytics; if that ever changes, it will be cookie-free and disclosed on the privacy page.",
   },
   {
     question: 'Can I use it for résumés and papers?',
@@ -56,6 +56,7 @@ const jsonLd = {
       url: new URL('/', Astro.site).href,
       description:
         'Scan any PDF for hidden text, invisible layers, and prompt-injection attempts aimed at AI reviewers. Runs entirely in your browser — files never leave your device.',
+      image: new URL('/og.png', Astro.site).href,
       offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
     },
     {

@@ -73,6 +73,38 @@ describe('extractDocument', () => {
       expect(doc.pages.length).toBeGreaterThanOrEqual(1);
     }
   });
+
+  // ---- Review 2026-07-16 fixes (P0-1 / P1-4 / P1-5) ----
+
+  it('P0-1: throws on a password-protected PDF instead of returning an empty clean doc', () => {
+    expect(() => extractDocument(load('encrypted.pdf'))).toThrow(
+      /password-protected/,
+    );
+  });
+
+  it('P0-1: the thrown error message is exactly the contract string the UI/e2e depend on', () => {
+    expect(() => extractDocument(load('encrypted.pdf'))).toThrow(
+      'This PDF is password-protected and cannot be scanned. Decrypt it first, then try again.',
+    );
+  });
+
+  it('P1-4: CropBox inherited from the /Pages ancestor is picked up, not just a page-local one', () => {
+    const doc = extractDocument(load('cropbox_inherit.pdf'));
+    const p = doc.pages[0];
+    // mediabox is the default blank-page size; cropbox must be the inherited,
+    // smaller box declared only on the /Pages node.
+    expect(p.mediabox).toEqual([0, 0, 612, 792]);
+    expect(p.cropbox).toEqual([10, 10, 600, 780]);
+    expect(p.cropbox).not.toEqual(p.mediabox);
+  });
+
+  it('P1-5: a MediaBox with a non-number element falls back to the default box, not a degenerate rect', () => {
+    const doc = extractDocument(load('badrect.pdf'));
+    const p = doc.pages[0];
+    // The malformed MediaBox is [0 0 /Foo 792] — without the isNumber() guard
+    // this would silently become [0,0,0,792] (Name.asNumber() === 0).
+    expect(p.mediabox).toEqual([0, 0, 612, 792]);
+  });
 });
 
 describe('packColor', () => {

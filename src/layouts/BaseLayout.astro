@@ -8,11 +8,12 @@ export interface Props {
   description: string;
   pathname: string;
   jsonLd?: object;
+  image?: string;
 }
 
-const { title, description, pathname, jsonLd } = Astro.props;
+const { title, description, pathname, jsonLd, image } = Astro.props;
 const canonical = new URL(pathname, Astro.site);
-const gaId = import.meta.env.PUBLIC_GA_ID;
+const ogImage = new URL(image ?? '/og.png', Astro.site);
 ---
 <!doctype html>
 <html lang="en">
@@ -22,23 +23,15 @@ const gaId = import.meta.env.PUBLIC_GA_ID;
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
-    <meta name="twitter:card" content="summary" />
+    <meta property="og:image" content={ogImage} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content={ogImage} />
     {jsonLd && <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />}
-    {gaId && (
-      <>
-        <script async src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}></script>
-        <script is:inline define:vars={{ gaId }}>
-          window.dataLayer = window.dataLayer || [];
-          function gtag() { dataLayer.push(arguments); }
-          gtag('js', new Date());
-          gtag('config', gaId);
-        </script>
-      </>
-    )}
   </head>
   <body class="min-h-screen flex flex-col bg-background text-foreground">
     <Header pathname={pathname} />

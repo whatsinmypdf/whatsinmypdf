@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="7" fill="#12296b"/>
+  <!-- ghost page: a duplicate document shifted behind, standing for a hidden layer -->
+  <path d="M12 7h6l4 4v13a1 1 0 0 1-1 1H12a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z" fill="#ffffff" opacity="0.18"/>
+  <!-- main page -->
+  <path d="M10 5h6l4 4v14a1 1 0 0 1-1 1H10a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z" fill="#ffffff"/>
+  <path d="M16 5v3a1 1 0 0 0 1 1h3" fill="none" stroke="#12296b" stroke-width="1" stroke-linejoin="round"/>
+  <!-- visible text lines -->
+  <rect x="11.5" y="13" width="7" height="1.4" rx="0.7" fill="#12296b"/>
+  <rect x="11.5" y="16" width="7" height="1.4" rx="0.7" fill="#12296b"/>
+  <!-- a "hidden" line rendered near-white on white, flagged by a small marker -->
+  <rect x="11.5" y="19" width="5" height="1.4" rx="0.7" fill="#e7ebf5"/>
+  <circle cx="20" cy="19.7" r="2.1" fill="#c2272d"/>
+</svg>

@@ -1,3 +1,4 @@
+import type { Ref } from 'react';
 import { ShieldCheck, TriangleAlert, FileText } from 'lucide-react';
 import clsx from 'clsx';
 import type { CategoryId, Finding, ScanReport } from '../lib/scanner/types';
@@ -102,6 +103,11 @@ function CategoryGroup({ id, items }: { id: CategoryId; items: Finding[] }) {
       <header className="space-y-3 p-4 sm:p-5">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <h3 className="text-base font-semibold">{info.title}</h3>
+          {info.strongSignal && (
+            <span className="rounded-full bg-danger/10 px-2 py-0.5 font-mono text-[0.65rem] uppercase tracking-wider text-danger">
+              Strong signal
+            </span>
+          )}
           <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
             {id}
           </span>
@@ -125,7 +131,13 @@ function CategoryGroup({ id, items }: { id: CategoryId; items: Finding[] }) {
   );
 }
 
-export default function ReportView({ report }: { report: ScanReport }) {
+export default function ReportView({
+  report,
+  headingRef,
+}: {
+  report: ScanReport;
+  headingRef?: Ref<HTMLHeadingElement>;
+}) {
   const clean = report.counts.total === 0;
   const groups = orderedGroups(report.findings);
 
@@ -137,7 +149,9 @@ export default function ReportView({ report }: { report: ScanReport }) {
           <div className="flex items-start gap-3">
             <ShieldCheck className="mt-0.5 size-6 shrink-0 text-success" aria-hidden />
             <div className="space-y-2">
-              <h2 className="text-lg font-semibold">No hidden content found</h2>
+              <h2 ref={headingRef} tabIndex={-1} className="text-lg font-semibold outline-none">
+                No hidden content found
+              </h2>
               <p className="max-w-prose text-sm leading-relaxed text-muted-foreground">
                 A clean structural scan is not proof of safety. This tool inspects the text and
                 structure layers only — text baked into images, glyph-substitution tricks, and
@@ -152,7 +166,7 @@ export default function ReportView({ report }: { report: ScanReport }) {
           <div className="flex items-start gap-3">
             <TriangleAlert className="mt-0.5 size-6 shrink-0 text-danger" aria-hidden />
             <div className="space-y-1">
-              <h2 className="text-lg font-semibold">
+              <h2 ref={headingRef} tabIndex={-1} className="text-lg font-semibold outline-none">
                 {report.counts.total} {report.counts.total === 1 ? 'finding' : 'findings'} across{' '}
                 {groups.length} {groups.length === 1 ? 'category' : 'categories'}
               </h2>

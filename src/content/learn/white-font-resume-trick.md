@@ -1,6 +1,6 @@
 ---
 title: "The White Font Résumé Trick — and Why It Backfires"
-description: Padding a résumé with invisible white keywords used to fool keyword filters. Against modern parsers and AI screeners it is more likely to sink your application than help it.
+description: Padding a résumé with invisible white text to fool keyword filters used to work. Against modern AI screeners, it now backfires more than it helps.
 pubDate: 2026-06-30
 ---
 
@@ -44,5 +44,7 @@ The durable move is boring and it works: make the keywords real and visible.
 - **Check your own file before you send it.** Export the final PDF, select-all and paste it into a text editor, and confirm that what a machine extracts matches what you see. You want no surprises in that text — no leftover template text, no invisible anything.
 
 The white-font trick trades a small, shrinking advantage against outdated filters for a large, growing risk against modern ones. The systems it targets learned to see through it, and the humans behind them learned to check. Real keywords, honestly placed, cost you nothing and carry none of the downside.
+
+White-on-white text is just one entry on a longer list of places a document can hide content — see [10 places text can hide inside a PDF](/learn/10-places-text-can-hide-inside-a-pdf) for the rest. And before you send a résumé anywhere, [a quick check for hidden text](/learn/how-to-check-a-pdf-for-hidden-text) takes about as long as it took you to read this sentence.
 
 Want to confirm your résumé holds no hidden text before you send it — or check one you received? [Scan the PDF on the homepage.](/) It runs locally in your browser; the file is never uploaded.

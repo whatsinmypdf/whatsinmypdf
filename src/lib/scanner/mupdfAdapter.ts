@@ -39,7 +39,9 @@ function quadToBbox(q: number[]): Rect4 {
 
 function objToRect(obj: mupdf.PDFObject | null | undefined, fallback: Rect4): Rect4 {
   if (!obj || !obj.isArray() || obj.length < 4) return fallback;
-  const r = [0, 1, 2, 3].map((i) => obj.get(i).asNumber());
+  const elems = [0, 1, 2, 3].map((i) => obj.get(i));
+  if (elems.some((e) => !e.isNumber())) return fallback;
+  const r = elems.map((e) => e.asNumber());
   return r as Rect4;
 }
 
@@ -215,11 +217,18 @@ function extractEmbeddedFiles(doc: mupdf.PDFDocument): { name: string; size: num
 }
 
 export function extractDocument(data: Uint8Array): ExtractedDoc {
-  const doc: mupdf.PDFDocument | null = mupdf.Document.openDocument(
-    data,
-    'application/pdf',
-  ).asPDF();
-  if (!doc) throw new Error('not a PDF document');
+  const raw = mupdf.Document.openDocument(data, 'application/pdf');
+  if (raw.needsPassword()) {
+    raw.destroy();
+    throw new Error(
+      'This PDF is password-protected and cannot be scanned. Decrypt it first, then try again.',
+    );
+  }
+  const doc: mupdf.PDFDocument | null = raw.asPDF();
+  if (!doc) {
+    raw.destroy();
+    throw new Error('not a PDF document');
+  }
   try {
     const meta = (k: string): string => {
       try {
@@ -245,9 +254,11 @@ export function extractDocument(data: Uint8Array): ExtractedDoc {
         try {
           const pobj = page.getObject();
           const mediabox = objToRect(pobj.getInheritable('MediaBox'), FALLBACK_BOX);
-          // Per the fixed interface: cropbox equals mediabox when the page dict
-          // has no CropBox of its own.
-          const cropbox = objToRect(pobj.get('CropBox'), mediabox);
+          // CropBox is inheritable from ancestor /Pages nodes per the PDF spec,
+          // same as MediaBox — use getInheritable so a CropBox declared only on
+          // the /Pages tree is still picked up. Falls back to mediabox when no
+          // CropBox is found anywhere in the inheritance chain.
+          const cropbox = objToRect(pobj.getInheritable('CropBox'), mediabox);
 
           const runs = extractRuns(page);
           const contentStreams = extractContentStreams(pobj);

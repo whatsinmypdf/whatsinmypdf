@@ -40,8 +40,19 @@ export function luma(colorInt: number): number {
   return 0.299 * r + 0.587 * g + 0.114 * b;
 }
 
+// Slicing a string by UTF-16 code unit can land the cut inside a surrogate
+// pair, leaving a lone high surrogate at the end of the slice (which renders
+// as U+FFFD / mojibake downstream). Drop that trailing lone surrogate rather
+// than emit an invalid code unit.
 function truncate(text: string): string {
-  return text.length > TEXT_TRUNCATE ? text.slice(0, TEXT_TRUNCATE) : text;
+  if (text.length <= TEXT_TRUNCATE) return text;
+  let sliced = text.slice(0, TEXT_TRUNCATE);
+  const lastCode = sliced.charCodeAt(sliced.length - 1);
+  if (lastCode >= 0xd800 && lastCode <= 0xdbff) {
+    // Lone high surrogate at the boundary — its low-surrogate partner got cut.
+    sliced = sliced.slice(0, -1);
+  }
+  return sliced;
 }
 
 function hexColor(colorInt: number): string {

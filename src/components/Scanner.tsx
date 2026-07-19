@@ -27,6 +27,8 @@ export default function Scanner() {
   const workerRef = useRef<Worker | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const watchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reportHeadingRef = useRef<HTMLHeadingElement>(null);
+  const scanGen = useRef(0);
 
   const terminateWorker = useCallback(() => {
     if (watchdogRef.current !== null) {
@@ -39,10 +41,15 @@ export default function Scanner() {
 
   useEffect(() => terminateWorker, [terminateWorker]);
 
+  useEffect(() => {
+    if (state.phase === 'done') reportHeadingRef.current?.focus();
+  }, [state.phase]);
+
   const scan = useCallback(
     async (file: File) => {
+      const gen = ++scanGen.current;
       // Pre-checks before spinning up the worker or loading WASM.
-      if (file.type && file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      if (!(file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf'))) {
         setState({ phase: 'error', message: 'That file is not a PDF. Choose a .pdf file to scan.' });
         return;
       }
@@ -63,9 +70,12 @@ export default function Scanner() {
       try {
         buffer = await file.arrayBuffer();
       } catch {
-        setState({ phase: 'error', message: 'Could not read that file from disk.' });
+        if (gen === scanGen.current) {
+          setState({ phase: 'error', message: 'Could not read that file from disk.' });
+        }
         return;
       }
+      if (gen !== scanGen.current) return;
 
       terminateWorker();
       const worker = new Worker(new URL('../lib/scanner/worker.ts', import.meta.url), {
@@ -112,6 +122,7 @@ export default function Scanner() {
   );
 
   const reset = useCallback(() => {
+    scanGen.current++;
     terminateWorker();
     if (inputRef.current) inputRef.current.value = '';
     setState({ phase: 'idle' });
@@ -157,7 +168,7 @@ export default function Scanner() {
             </button>
           </div>
         </div>
-        <ReportView report={state.report} />
+        <ReportView report={state.report} headingRef={reportHeadingRef} />
       </div>
     );
   }
@@ -179,6 +190,7 @@ export default function Scanner() {
         className={clsx(
           'group relative flex min-h-64 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed p-10 text-center transition-colors',
           dragOver ? 'border-primary bg-primary/5' : 'border-border bg-card hover:border-primary/60',
+          'has-[:focus-visible]:border-primary has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-primary',
           busy && 'cursor-progress',
         )}
       >
@@ -195,12 +207,14 @@ export default function Scanner() {
         {busy ? (
           <>
             <Loader2 className="size-10 animate-spin text-primary" aria-hidden />
-            <p className="mt-5 text-base font-medium">
-              {state.phase === 'loading' ? 'Loading scan engine…' : 'Scanning for hidden content…'}
-            </p>
-            <p className="mt-1 font-mono text-sm text-muted-foreground">
-              {'fileName' in state ? state.fileName : ''}
-            </p>
+            <div role="status" aria-live="polite">
+              <p className="mt-5 text-base font-medium">
+                {state.phase === 'loading' ? 'Loading scan engine…' : 'Scanning for hidden content…'}
+              </p>
+              <p className="mt-1 font-mono text-sm text-muted-foreground">
+                {'fileName' in state ? state.fileName : ''}
+              </p>
+            </div>
             <p className="mt-3 text-xs text-muted-foreground">
               Everything runs on this page. Nothing is uploaded.
             </p>

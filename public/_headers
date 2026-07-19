@@ -1,0 +1,21 @@
+# Cloudflare Pages header injection file. Applies to every response.
+#
+# The script-src and style-src hashes below cover Astro's own inline
+# hydration boot scripts and its astro-island CSS reset — these are the only
+# inline <script>/<style> tags this build emits (verified against dist/*.html
+# for the 2026-07-16 review, P1-8). They are framework runtime output, not
+# authored content, so they only change if the Astro version changes.
+#
+# If a future `pnpm build` fails the CSP-header e2e check (or you see
+# "Refused to execute inline script/style" in the browser console), Astro's
+# island runtime bytes changed — regenerate the hashes with:
+#   node -e "const fs=require('fs'),c=require('crypto');const html=fs.readFileSync('dist/index.html','utf8');const re=/<(script|style)([^>]*)>([\s\S]*?)<\/\1>/g;let m;while((m=re.exec(html))){if(/\bsrc=/.test(m[2])||/application\/ld\+json/.test(m[2]))continue;console.log(m[1], 'sha256-'+c.createHash('sha256').update(m[3]).digest('base64'));}"
+# and swap the two script-src hashes and the one style-src hash below. The
+# JSON-LD <script type="application/ld+json"> tags do not need a hash: CSP
+# script-src only governs script elements that would actually execute, and
+# a non-JS type never executes as a script.
+/*
+  Content-Security-Policy: default-src 'self'; connect-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-QzWFZi+FLIx23tnm9SBU4aEgx4x8DsuASP07mfqol/c=' 'sha256-SaCkFfPruIdTXT8/97JArQmGxiJAL2o4bBDvSgJ5y3Q='; style-src 'self' 'sha256-vv9IoKo7BSLbWcUHr3tNmfNVmm5L/9Cfn2H6LMk7/ow='; img-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()

@@ -362,4 +362,83 @@ describe('scanPdf() — 9-fixture integration against EXPECTED.md ground truth',
     expect(typeof report.producer).toBe('string');
     expect(typeof report.creator).toBe('string');
   });
+
+  // ---- Review 2026-07-16 fixes (P0-1 / P1-4) ----
+
+  it('P0-1: encrypted.pdf throws instead of returning a clean report', () => {
+    expect(() => scanPdf(load('encrypted.pdf'), 'encrypted.pdf')).toThrow(
+      /password-protected/,
+    );
+  });
+
+  it('P1-4: cropbox_inherit.pdf fires cropbox_mismatch because the inherited CropBox differs from mediabox', () => {
+    const report = scanPdf(load('cropbox_inherit.pdf'), 'cropbox_inherit.pdf');
+    expect(report.counts.cropbox_mismatch).toBeGreaterThanOrEqual(1);
+    const hit = report.findings.find((f) => f.category === 'cropbox_mismatch');
+    expect(hit?.detail).toContain('cropbox=[10,10,600,780]');
+  });
+
+  it('P1-5: badrect.pdf falls back to the default box instead of a degenerate mediabox/cropbox', () => {
+    const report = scanPdf(load('badrect.pdf'), 'badrect.pdf');
+    // Fallback box [0,0,612,792] is used for both mediabox and cropbox (they
+    // match), so cropbox_mismatch must NOT fire — the malformed MediaBox
+    // element must not silently coerce to a degenerate [0,0,0,792] rect.
+    expect(report.counts.cropbox_mismatch).toBe(0);
+  });
+});
+
+describe('truncate() surrogate safety (P2-13, exercised via detect() on near_white_text)', () => {
+  // truncate() is not exported; drive it through detect()'s near_white_text
+  // path, which calls truncate(run.text) at the TEXT_TRUNCATE=200 boundary.
+  function isValidUtf16(s: string): boolean {
+    // A string with an unpaired surrogate at either end (or anywhere) fails
+    // this round-trip: encoding to code points and back via String.fromCodePoint
+    // would normally throw / diverge on a lone surrogate captured mid-pair.
+    for (let i = 0; i < s.length; i++) {
+      const code = s.charCodeAt(i);
+      const isHigh = code >= 0xd800 && code <= 0xdbff;
+      const isLow = code >= 0xdc00 && code <= 0xdfff;
+      if (isHigh) {
+        const next = s.charCodeAt(i + 1);
+        if (!(next >= 0xdc00 && next <= 0xdfff)) return false; // unpaired high surrogate
+        i++; // skip the paired low surrogate
+      } else if (isLow) {
+        return false; // unpaired low surrogate (no preceding high)
+      }
+    }
+    return true;
+  }
+
+  it('slicing exactly through an emoji surrogate pair at the 200-char boundary produces no lone surrogate', () => {
+    // 199 'x' chars + an emoji (2 UTF-16 code units: high surrogate at index
+    // 199, low surrogate at index 200) + trailing filler. A naive
+    // text.slice(0, 200) lands exactly between the two surrogate halves,
+    // keeping only the lone high surrogate.
+    const emoji = '\u{1F600}'; // 😀 — 2 code units (0xD83D 0xDE00)
+    const text = 'x'.repeat(199) + emoji + 'y'.repeat(50);
+    const doc = makeDoc([
+      makePage({
+        runs: [{ text, size: 10, color: 0xffffff, bbox: [0, 0, 10, 10] }],
+      }),
+    ]);
+    const report = detect(doc, 'surrogate.pdf');
+    const hit = report.findings.find((f) => f.category === 'near_white_text');
+    expect(hit?.text).toBeDefined();
+    expect(isValidUtf16(hit!.text!)).toBe(true);
+    // The fix drops the lone high surrogate rather than keep it dangling.
+    expect(hit!.text!.length).toBeLessThanOrEqual(200);
+    expect(hit!.text!.endsWith('\uD83D')).toBe(false);
+  });
+
+  it('text shorter than the truncate threshold is returned unmodified (including a trailing emoji)', () => {
+    const text = 'short text with emoji ' + '\u{1F600}';
+    const doc = makeDoc([
+      makePage({
+        runs: [{ text, size: 10, color: 0xffffff, bbox: [0, 0, 10, 10] }],
+      }),
+    ]);
+    const report = detect(doc, 'short.pdf');
+    const hit = report.findings.find((f) => f.category === 'near_white_text');
+    expect(hit?.text).toBe(text);
+  });
 });

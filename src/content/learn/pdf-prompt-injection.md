@@ -56,4 +56,6 @@ Structural detection is powerful but not total. Text baked into an **image** car
 
 Still, for the person on the receiving end — a reviewer, an editor, a recruiter, anyone about to feed a third-party PDF to an AI tool — a structural scan is the fastest way to find out whether the file is talking to your model behind your back.
 
+Prompt injection is one of ten ways a PDF can carry content it does not show — see [10 places text can hide inside a PDF](/learn/10-places-text-can-hide-inside-a-pdf) for the full list, or [how to check a PDF for hidden text](/learn/how-to-check-a-pdf-for-hidden-text) for the manual and structural methods that surface it.
+
 Reviewing a paper, contract, or application that will pass through an AI tool? [Scan the PDF on the homepage first.](/) It runs entirely in your browser, and the file is never uploaded.
