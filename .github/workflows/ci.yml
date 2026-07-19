@@ -38,3 +38,37 @@ jobs:
 
       - name: E2E tests
         run: pnpm e2e
+
+  deploy:
+    # Deploys to the existing direct-upload Pages project. Requires the
+    # CLOUDFLARE_API_TOKEN repo secret (Pages Edit permission is enough).
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: 9e4d0b6ce6b452e73c5548fd583f263b
+          command: pages deploy dist --project-name=pdfstowaway

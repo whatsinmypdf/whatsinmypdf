@@ -3,6 +3,11 @@
   "type": "module",
   "description": "Scan a PDF for hidden text, invisible layers, and prompt-injection attempts, entirely in your browser.",
   "license": "AGPL-3.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/whatsinmypdf/whatsinmypdf.git"
+  },
+  "homepage": "https://whatsinmypdf.com",
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",

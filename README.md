@@ -4,6 +4,9 @@ Find hidden content in PDFs — white-on-white text, invisible render modes, tin
 fonts, hidden layers, embedded files/JavaScript, and prompt-injection phrasing
 aimed at AI reviewers — entirely in your browser.
 
+Live at [whatsinmypdf.com](https://whatsinmypdf.com). Pushes to `main` deploy
+automatically via GitHub Actions after the test suite passes.
+
 ## Privacy model
 
 The scan runs 100% locally. The PDF is parsed and analyzed by [mupdf](https://www.npmjs.com/package/mupdf)
