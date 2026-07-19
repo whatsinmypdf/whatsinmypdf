@@ -1,19 +1,32 @@
 ---
+import { type Locale, getUiStrings, zhPathFor, enPathFor } from '@/i18n';
+
 export interface Props {
   pathname: string;
+  locale?: Locale;
 }
 
-const { pathname } = Astro.props;
+const { pathname, locale = 'en' } = Astro.props;
+const t = getUiStrings(locale);
+
 const navItems = [
-  { href: '/', label: 'Scanner' },
-  { href: '/learn', label: 'Learn' },
-  { href: '/about', label: 'About' },
-];
+  { path: '/', label: t.nav.scanner },
+  { path: '/learn', label: t.nav.learn },
+  { path: '/about', label: t.nav.about },
+].map((item) => ({
+  href: locale === 'zh' ? zhPathFor(item.path) : item.path,
+  label: item.label,
+}));
+
+const otherLocale: Locale = locale === 'zh' ? 'en' : 'zh';
+const otherHref = locale === 'zh' ? enPathFor(pathname) : zhPathFor(pathname);
+const otherLabel = otherLocale === 'zh' ? '中文' : 'EN';
+const otherLangName = otherLocale === 'zh' ? 'Chinese' : 'English';
 ---
 <header class="border-b border-border">
   <div class="container flex items-center justify-between py-4">
-    <a href="/" class="text-lg font-bold">WhatsInMyPDF</a>
-    <nav class="flex gap-6">
+    <a href={locale === 'zh' ? '/zh' : '/'} class="text-lg font-bold">WhatsInMyPDF</a>
+    <nav class="flex items-center gap-6">
       {navItems.map((item) => (
         <a
           href={item.href}
@@ -23,6 +36,13 @@ const navItems = [
           {item.label}
         </a>
       ))}
+      <a
+        href={otherHref}
+        class="rounded border border-border px-2 py-1 font-mono text-xs font-medium text-muted-foreground transition-colors hover:border-primary/60 hover:text-foreground"
+        aria-label={`${t.nav.switchTo} ${otherLangName}`}
+      >
+        {otherLabel}
+      </a>
     </nav>
   </div>
 </header>

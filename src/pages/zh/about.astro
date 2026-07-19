@@ -1,0 +1,22 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+---
+<BaseLayout
+  title="关于 — WhatsInMyPDF"
+  description="WhatsInMyPDF 为什么存在，以及它如何在不上传文件的前提下检查 PDF 里的隐藏内容。"
+  pathname="/zh/about"
+  locale="zh"
+>
+  <section class="container max-w-2xl py-16">
+    <h1 class="text-3xl font-bold">关于</h1>
+    <p class="mt-6 text-muted-foreground">
+      PDF 可以携带页面上看不到的内容：白底白字、默认关闭的图层、缩到几乎不存在的字号，或者藏在页面之外坐标里的指令。随着越来越多的文档被 AI 工具摘要或审阅，这类隐藏内容变成了一种手段，把指令绕过人类读者，直接送到代替他们阅读文件的模型面前。
+    </p>
+    <p class="mt-4 text-muted-foreground">
+      WhatsInMyPDF 检查 PDF 里的这些手法：隐形渲染模式、白底白字、极小字号、被放到页面之外的文字、裁剪框不匹配（内容被裁出页面后留下的信号）、隐藏的可选内容图层、嵌入文件、JavaScript、文字藏在文件结构里的批注，以及已知的提示词注入措辞。全部过程都在你的浏览器里通过 WebAssembly 完成，文件不会被上传到任何地方。
+    </p>
+    <p class="mt-4 text-muted-foreground">
+      这是一个免费的开源工具。它不会捕捉到一切，也不能替代仔细的人工审查，但它能把肉眼容易忽略的信号找出来。
+    </p>
+  </section>
+</BaseLayout>

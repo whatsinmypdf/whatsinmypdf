@@ -1,0 +1,56 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { getCollection, render } from 'astro:content';
+import type { GetStaticPaths } from 'astro';
+
+export const getStaticPaths = (async () => {
+  const articles = await getCollection('learnZh');
+  return articles.map((entry) => ({
+    params: { slug: entry.id },
+    props: { entry },
+  }));
+}) satisfies GetStaticPaths;
+
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+
+const pathname = `/zh/learn/${entry.id}`;
+const dateFmt = new Intl.DateTimeFormat('zh-CN', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+});
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  headline: entry.data.title,
+  description: entry.data.description,
+  datePublished: entry.data.pubDate.toISOString(),
+  inLanguage: 'zh-CN',
+  author: { '@type': 'Organization', name: 'WhatsInMyPDF' },
+  publisher: { '@type': 'Organization', name: 'WhatsInMyPDF' },
+  mainEntityOfPage: new URL(pathname, Astro.site).href,
+  image: new URL('/og.png', Astro.site).href,
+};
+---
+<BaseLayout
+  title={`${entry.data.title} — WhatsInMyPDF`}
+  description={entry.data.description}
+  pathname={pathname}
+  jsonLd={jsonLd}
+  locale="zh"
+>
+  <article class="container max-w-2xl py-16">
+    <a href="/zh/learn" class="font-mono text-xs uppercase tracking-[0.15em] text-muted-foreground hover:text-primary">
+      ← 文章
+    </a>
+    <h1 class="mt-6 text-3xl font-bold tracking-tight sm:text-4xl">{entry.data.title}</h1>
+    <p class="mt-4 font-mono text-xs uppercase tracking-[0.15em] text-muted-foreground">
+      {dateFmt.format(entry.data.pubDate)}
+    </p>
+    <div class="prose mt-10">
+      <Content />
+    </div>
+  </article>
+</BaseLayout>

@@ -6,9 +6,16 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
   description="This page doesn't exist. Head back to the scanner."
   pathname="/404"
 >
+  <!-- Cloudflare Pages serves this single root 404 for misses under every
+       path, including /zh/*, so it carries both languages. -->
   <section class="container py-24 text-center">
     <h1 class="text-4xl font-bold">Page not found</h1>
     <p class="mt-4 text-muted-foreground">The page you're looking for doesn't exist.</p>
     <a href="/" class="mt-8 inline-block underline">Back to the scanner</a>
+    <div class="mx-auto mt-12 max-w-xs border-t border-border pt-8" lang="zh-CN">
+      <h2 class="text-lg font-semibold">页面不存在</h2>
+      <p class="mt-2 text-sm text-muted-foreground">你要找的页面不存在。</p>
+      <a href="/zh" class="mt-4 inline-block underline">返回扫描器</a>
+    </div>
   </section>
 </BaseLayout>

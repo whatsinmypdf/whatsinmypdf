@@ -8,7 +8,24 @@ export default defineConfig({
   output: 'static',
   trailingSlash: 'never',
   build: { format: 'file' },
-  integrations: [react(), sitemap()],
+  i18n: {
+    defaultLocale: 'en',
+    locales: ['en', 'zh'],
+    routing: {
+      // English keeps living at the root (no /en/ prefix, no auto-redirect);
+      // zh pages are manually authored under src/pages/zh/.
+      prefixDefaultLocale: false,
+    },
+  },
+  integrations: [
+    react(),
+    sitemap({
+      i18n: {
+        defaultLocale: 'en',
+        locales: { en: 'en', zh: 'zh-CN' },
+      },
+    }),
+  ],
   vite: {
     plugins: [tailwindcss()],
     optimizeDeps: { exclude: ['mupdf'] },

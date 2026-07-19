@@ -1,0 +1,158 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Scanner from '@/components/Scanner.tsx';
+import { getCategories } from '@/i18n';
+
+const categories = Object.values(getCategories('zh'));
+
+const steps = [
+  {
+    title: '拖入你的文件',
+    body: '把 PDF 拖到框里，或点击选择文件。不需要注册，不需要登录，也不用为文件大小费心。',
+  },
+  {
+    title: '在你的浏览器本地扫描',
+    body: '文件在你自己的设备上通过 WebAssembly 解码和分析，不会上传到任何服务器。',
+  },
+  {
+    title: '查看证据',
+    body: '每一处隐藏或近乎不可见的文字，都会连同页码和内容一起列出来，由你自己判断每一条发现。',
+  },
+];
+
+// 单一数据源：可见的 FAQ 区块和 FAQPage 结构化数据都从这个数组渲染，文案不会出现两处不一致。
+const faqs = [
+  {
+    question: '我的文件会被上传吗？',
+    answer:
+      '不会。扫描过程完全在你的浏览器里通过 WebAssembly 完成。你的 PDF 在自己的设备上本地解码和分析，不会上传到任何服务器，不会有任何内容离开你的浏览器。',
+  },
+  {
+    question: '它可能漏掉什么？',
+    answer:
+      '它读取的是 PDF 的文本层和文件结构，所以无法看到只以图片形式存在的文字——扫描件或截图没有文本层可供检查。它也可能漏掉措辞隐晦到足以绕过已知模式的指令。扫描结果干净能降低风险，但不能证明文件安全。',
+  },
+  {
+    question: '为什么它是免费开源的？',
+    answer:
+      '检查一份文档里有没有隐藏内容，不应该需要把文件交给一个陌生的服务器。保持工具免费开源，意味着任何人都可以验证它确实做了它声称的事，而且没有上传任何内容。没有账号，没有付费墙。本站目前不运行任何分析工具；如果将来有变化，任何新增的分析都会是无 cookie 的，并会在隐私页面上说明。',
+  },
+  {
+    question: '可以用它检查简历和论文吗？',
+    answer:
+      '可以——这正是最常见的两种用途。你可以检查收到的一份简历里有没有隐藏关键词，也可以在把一篇论文、一份合同或一份报告交给任何自动化工具之前，先扫描它里面有没有针对 AI 审阅者或摘要工具的文字和指令。',
+  },
+];
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'SoftwareApplication',
+      name: 'WhatsInMyPDF',
+      applicationCategory: 'SecurityApplication',
+      operatingSystem: 'Web browser',
+      url: new URL('/zh', Astro.site).href,
+      description:
+        '扫描任意 PDF，检查隐藏文字、隐形图层，以及针对 AI 审阅者的提示词注入痕迹。完全在浏览器本地运行，文件不会离开你的设备。',
+      image: new URL('/og.png', Astro.site).href,
+      inLanguage: 'zh-CN',
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    },
+    {
+      '@type': 'FAQPage',
+      inLanguage: 'zh-CN',
+      mainEntity: faqs.map((f) => ({
+        '@type': 'Question',
+        name: f.question,
+        acceptedAnswer: { '@type': 'Answer', text: f.answer },
+      })),
+    },
+  ],
+};
+---
+<BaseLayout
+  title="WhatsInMyPDF — 免费本地检测 PDF 隐藏内容"
+  description="扫描任意 PDF，检查隐藏文字、隐形图层，以及针对 AI 审阅者的提示词注入痕迹。100% 本地运行，文件不会离开你的浏览器。"
+  pathname="/zh"
+  jsonLd={jsonLd}
+  locale="zh"
+>
+  <section class="container py-16 sm:py-20">
+    <div class="mx-auto max-w-2xl text-center">
+      <p class="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">
+        本地 PDF 取证
+      </p>
+      <h1 class="mt-3 text-4xl font-bold tracking-tight sm:text-5xl">
+        找出藏在你 PDF 里的内容
+      </h1>
+      <p class="mx-auto mt-4 max-w-xl text-lg text-muted-foreground">
+        白底白字、隐形渲染模式、极小字号、隐藏图层，以及针对 AI 审阅者的提示词注入。100% 本地运行——文件不会离开你的浏览器。
+      </p>
+    </div>
+
+    <div class="mt-12">
+      <Scanner client:load locale="zh" />
+    </div>
+  </section>
+
+  <!-- How it works -->
+  <section class="border-t border-border bg-card">
+    <div class="container py-16">
+      <h2 class="text-center text-2xl font-bold tracking-tight">工作原理</h2>
+      <ol class="mx-auto mt-10 grid max-w-4xl gap-8 sm:grid-cols-3">
+        {steps.map((step, i) => (
+          <li class="text-center sm:text-left">
+            <span class="font-mono text-sm font-bold text-primary">
+              {String(i + 1).padStart(2, '0')}
+            </span>
+            <h3 class="mt-2 text-lg font-semibold">{step.title}</h3>
+            <p class="mt-2 text-sm text-muted-foreground">{step.body}</p>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+
+  <!-- What we detect -->
+  <section class="container py-16">
+    <div class="mx-auto max-w-2xl text-center">
+      <h2 class="text-2xl font-bold tracking-tight">我们能检测什么</h2>
+      <p class="mt-3 text-muted-foreground">
+        十种隐藏内容，直接从文件结构里读取，而不是从渲染出来的页面上判断。
+      </p>
+    </div>
+    <div class="mx-auto mt-10 grid max-w-4xl gap-4 sm:grid-cols-2">
+      {categories.map((cat) => (
+        <div class="rounded-lg border border-border bg-card p-5">
+          <div class="flex items-center gap-2">
+            <h3 class="font-semibold">{cat.title}</h3>
+            {cat.strongSignal && (
+              <span class="rounded-full bg-danger/10 px-2 py-0.5 font-mono text-[0.65rem] uppercase tracking-wider text-danger">
+                强信号
+              </span>
+            )}
+          </div>
+          <p class="mt-2 text-sm text-muted-foreground">{cat.explanation}</p>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="border-t border-border bg-card">
+    <div class="container py-16">
+      <div class="mx-auto max-w-2xl">
+        <h2 class="text-2xl font-bold tracking-tight">常见问题</h2>
+        <dl class="mt-8 space-y-8">
+          {faqs.map((faq) => (
+            <div class="border-t border-border pt-6 first:border-t-0 first:pt-0">
+              <dt class="font-semibold">{faq.question}</dt>
+              <dd class="mt-2 text-muted-foreground">{faq.answer}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

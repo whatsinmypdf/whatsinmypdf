@@ -1,20 +1,30 @@
 ---
+import { type Locale, getUiStrings, zhPathFor } from '@/i18n';
+
+export interface Props {
+  locale?: Locale;
+}
+
+const { locale = 'en' } = Astro.props;
+const t = getUiStrings(locale);
 const year = new Date().getFullYear();
+const privacyHref = locale === 'zh' ? zhPathFor('/privacy') : '/privacy';
+const termsHref = locale === 'zh' ? zhPathFor('/terms') : '/terms';
 ---
 <footer class="border-t border-border mt-16">
   <div class="container py-8 text-sm text-muted-foreground">
-    <p>Your files never leave your browser. Nothing is uploaded, nothing is stored.</p>
+    <p>{t.footer.tagline}</p>
     <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
       <span>&copy; {year} WhatsInMyPDF</span>
-      <a href="/privacy" class="underline">Privacy</a>
-      <a href="/terms" class="underline">Terms</a>
+      <a href={privacyHref} class="underline">{t.footer.privacy}</a>
+      <a href={termsHref} class="underline">{t.footer.terms}</a>
       <a
         href="https://github.com/whatsinmypdf/whatsinmypdf"
         class="underline"
         rel="noopener noreferrer"
-        target="_blank">Source on GitHub</a
+        target="_blank">{t.footer.sourceOnGithub}</a
       >
-      <span>Licensed under AGPL-3.0-or-later</span>
+      <span>{t.footer.license}</span>
     </div>
   </div>
 </footer>

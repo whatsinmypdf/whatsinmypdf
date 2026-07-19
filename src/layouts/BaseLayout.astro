@@ -2,6 +2,7 @@
 import '@/styles/global.css';
 import Header from '@/components/Header.astro';
 import Footer from '@/components/Footer.astro';
+import { type Locale, bcp47, zhPathFor, enPathFor } from '@/i18n';
 
 export interface Props {
   title: string;
@@ -9,20 +10,31 @@ export interface Props {
   pathname: string;
   jsonLd?: object;
   image?: string;
+  locale?: Locale;
 }
 
-const { title, description, pathname, jsonLd, image } = Astro.props;
+const { title, description, pathname, jsonLd, image, locale = 'en' } = Astro.props;
 const canonical = new URL(pathname, Astro.site);
 const ogImage = new URL(image ?? '/og.png', Astro.site);
+
+// hreflang alternates: every page pair points at both locale's URL, with
+// x-default pointing at English (the site's default locale).
+const enPath = locale === 'zh' ? enPathFor(pathname) : pathname;
+const zhPath = locale === 'zh' ? pathname : zhPathFor(pathname);
+const enHref = new URL(enPath, Astro.site);
+const zhHref = new URL(zhPath, Astro.site);
 ---
 <!doctype html>
-<html lang="en">
+<html lang={bcp47(locale)}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
+    <link rel="alternate" hreflang="en" href={enHref} />
+    <link rel="alternate" hreflang={bcp47('zh')} href={zhHref} />
+    <link rel="alternate" hreflang="x-default" href={enHref} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content={title} />
@@ -34,8 +46,8 @@ const ogImage = new URL(image ?? '/og.png', Astro.site);
     {jsonLd && <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />}
   </head>
   <body class="min-h-screen flex flex-col bg-background text-foreground">
-    <Header pathname={pathname} />
+    <Header pathname={pathname} locale={locale} />
     <main class="flex-1"><slot /></main>
-    <Footer />
+    <Footer locale={locale} />
   </body>
 </html>
