@@ -28,3 +28,15 @@
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=()
+
+# Everything under /_astro/ is content-addressed — the filename carries a hash
+# of the bytes, so a changed file is a different URL and revalidation can never
+# do anything but confirm what the browser already has. Cloudflare's default
+# (max-age=14400, must-revalidate) made that round-trip mandatory, which meant
+# a scan failed the moment the visitor went offline: every scan spawns a worker
+# that re-imports the scanner module and the 12 MB mupdf .wasm, and a
+# revalidation with no network is a failed import, not a cache hit. That broke
+# the one property a visitor can check for themselves — pull the plug, scan
+# anyway — so it is now immutable. Verified by tests/smoke/prod.spec.ts.
+/_astro/*
+  Cache-Control: public, max-age=31536000, immutable

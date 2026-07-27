@@ -72,6 +72,43 @@ test('the deployed zh scanner produces a report too', async ({ page }) => {
   expect(cspErrors).toEqual([]);
 });
 
+// The claim the homepage makes to anyone who doubts "runs locally": load the
+// page, pull the plug, scan anyway. It only holds while /_astro/* is served
+// immutable — with a revalidating cache header the worker's module import
+// fails offline and the scan dies at "Loading scan engine…". Cloudflare's
+// default was exactly that, so this test guards a header, not a feature.
+test('a second scan still works with the network cut', async ({ page, context }) => {
+  await gotoReady(page, '/');
+  await page.getByRole('button', { name: 'Résumé with hidden instructions', exact: true }).click();
+  await expect(
+    page
+      .locator('section.overflow-hidden')
+      .filter({ has: page.getByText('prompt_injection', { exact: true }) }),
+  ).toBeVisible({ timeout: 60_000 });
+
+  await context.setOffline(true);
+  await page.getByRole('button', { name: 'Scan another file', exact: true }).click();
+  // A local fixture, not one of the /demo/ files: those would need a fetch,
+  // and the point here is that no fetch is left to make.
+  await page.setInputFiles('input[type=file]', 'tests/fixtures/hidden_layer.pdf');
+  await expect(
+    page
+      .locator('section.overflow-hidden')
+      .filter({ has: page.getByText('hidden_layers', { exact: true }) }),
+  ).toBeVisible({ timeout: 60_000 });
+  await context.setOffline(false);
+});
+
+test('hashed build assets are served immutable', async ({ request }) => {
+  const html = await (await request.get('/')).text();
+  const asset = html.match(/\/_astro\/[A-Za-z0-9_.-]+\.js/)?.[0];
+  expect(asset, 'no /_astro/ asset found in the homepage HTML').toBeTruthy();
+
+  const res = await request.get(asset!);
+  expect(res.status()).toBe(200);
+  expect(res.headers()['cache-control']).toContain('immutable');
+});
+
 test('production serves the crawler and security endpoints', async ({ request }) => {
   for (const path of ['/robots.txt', '/sitemap-index.xml', '/.well-known/security.txt']) {
     const res = await request.get(path);

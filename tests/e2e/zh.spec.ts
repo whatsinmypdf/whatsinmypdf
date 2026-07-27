@@ -66,14 +66,22 @@ test('a missing zh path serves the bilingual 404 page', async ({ page }) => {
   await expect(page.getByRole('link', { name: '返回扫描器' })).toHaveAttribute('href', '/zh');
 });
 
-test('/zh/learn index lists all 4 zh articles', async ({ page }) => {
+test('/zh/learn index lists every zh article', async ({ page }) => {
   await page.goto('/zh/learn');
   await expect(page.getByRole('heading', { level: 1, name: '文章' })).toBeVisible();
 
+  // Every slug in src/content/learn-zh/. The zh collection must stay in
+  // lockstep with the en one: src/pages/zh/learn/[slug].astro looks entries up
+  // by the English slug, so an article added on one side and not the other is
+  // a 404 waiting for a language switch.
   const articleLinks = [
     '/zh/learn/10-places-text-can-hide-inside-a-pdf',
+    '/zh/learn/hidden-prompts-in-academic-papers',
+    '/zh/learn/hidden-text-in-pdfs-exported-from-word-and-google-docs',
     '/zh/learn/how-to-check-a-pdf-for-hidden-text',
+    '/zh/learn/pdf-javascript-and-embedded-files',
     '/zh/learn/pdf-prompt-injection',
+    '/zh/learn/resume-with-hidden-instructions-what-recruiters-should-do',
     '/zh/learn/white-font-resume-trick',
   ];
   for (const href of articleLinks) {
