@@ -98,17 +98,12 @@ function sameBox(a: Rect4, b: Rect4): boolean {
 // least one axis? Ported verbatim from scan_pdf.py:205
 // (`bx1 <= cb.x0 or bx0 >= cb.x1 or by1 <= cb.y0 or by0 >= cb.y1`).
 //
-// COORDINATE-SPACE CAVEAT: stext run bboxes are y-down page space while
-// mediabox/cropbox arrays are y-up PDF space. This function is a pure
-// geometric separation test over whatever single coordinate space its two
-// arguments are given in
-// — it does not itself reconcile the two spaces. Callers (below, and the
-// hand-built unit tests) must supply bbox/cropbox already expressed in one
-// consistent space for the predicate's result to be meaningful. On real
-// extractions this rarely fires: MuPDF's text extraction is already clipped
-// to the cropbox before spans reach us (see tests/fixtures/EXPECTED.md,
-// "Deviation from the plan brief" section) — that is expected and
-// documented, not a bug in this predicate.
+// Pure geometric separation test over ONE coordinate space. It does not
+// reconcile spaces, and feeding it a stext bbox (y-down, relative to the crop
+// origin) together with a raw /CropBox array (y-up, absolute) reports visible
+// text as off-page — a page cropped to its top half flags its only visible
+// line. Its one production caller is mupdfAdapter, which maps the CropBox
+// through the page transform first so both arguments are in run space.
 export function isOutsideCropbox(bbox: Rect4, cropbox: Rect4): boolean {
   const [bx0, by0, bx1, by1] = bbox;
   const [cx0, cy0, cx1, cy1] = cropbox;
@@ -155,7 +150,12 @@ function detectPage(page: PageData, pageNum: number, findings: Finding[]): void 
       });
     }
 
-    if (isOutsideCropbox(run.bbox, page.cropbox)) {
+    // Reads the adapter's verdict rather than re-deriving one here: page.cropbox
+    // is the raw PDF array and run.bbox is crop-relative and y-down, so testing
+    // one against the other reports visible text as off-page (a vertically
+    // cropped page reports its only visible line). The adapter has the page
+    // transform needed to put both in one space; this module does not.
+    if (run.offPage) {
       findings.push({
         category: 'outside_cropbox',
         page: pageNum,

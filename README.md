@@ -58,6 +58,16 @@ Rendering is bounded: only pages that contain near-white text are rendered, at
 most 40 per document, and any failure leaves the runs unmeasured and reported
 as before. See `tests/sweep/` for the measurement harness.
 
+A second divergence covers off-page text. PDF engines clip text extraction to
+the CropBox, so text parked outside the visible page never reaches the
+detectors at all — including the injection patterns, which is why the
+reference scanner reports nothing for `tests/fixtures/offpage.pdf` even though
+the file contains an injection phrase. The adapter widens the CropBox to the
+MediaBox before extracting and maps the original crop through the page
+transform (so rotation and a non-zero crop origin are handled) to decide which
+runs are off-page. Text beyond the MediaBox is still out of reach: that is off
+the sheet of paper, not merely cropped away.
+
 ## Dev commands
 
 ```bash

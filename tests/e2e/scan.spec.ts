@@ -144,11 +144,12 @@ test('encrypted PDF is rejected with a password-protected error, never a report'
 //
 // Expected categories per fixture are taken verbatim from
 // tests/fixtures/EXPECTED.md, which is cross-validated against the
-// reference PyMuPDF scanner. offpage.pdf is the documented exception: per
-// EXPECTED.md ("Deviation from the plan brief") it triggers
-// cropbox_mismatch, not outside_cropbox, and does NOT trigger
-// prompt_injection (the injection phrase sits outside the cropbox and is
-// never extracted) — both are asserted explicitly below.
+// reference PyMuPDF scanner, except where EXPECTED.md documents a
+// deliberate divergence. offpage.pdf is one: the adapter widens the crop box
+// to the media box before extracting, so the phrase parked off-page is read,
+// flagged as off-page, and matched by the injection patterns — where the
+// reference scanner (and this one, before the coordinate-space fix) saw
+// nothing at all.
 //
 // Titles are copied from src/lib/scanner/categories.ts. The homepage's
 // static "What we detect" section renders every title as an <h3> on first
@@ -197,7 +198,21 @@ const CATEGORY_SWEEP: { fixture: string; groups: { id: string; title: string }[]
   },
   {
     fixture: 'offpage.pdf',
-    groups: [{ id: 'cropbox_mismatch', title: 'Crop box mismatch' }],
+    groups: [
+      { id: 'cropbox_mismatch', title: 'Crop box mismatch' },
+      { id: 'outside_cropbox', title: 'Off-page text' },
+      { id: 'prompt_injection', title: 'Prompt injection' },
+    ],
+  },
+  {
+    // The vertical crop. Its visible line must not be reported: with the crop
+    // origin on the y axis, comparing a stext bbox against the raw /CropBox
+    // array flags exactly that line, which is the bug this fixture guards.
+    fixture: 'offpage_vertical.pdf',
+    groups: [
+      { id: 'outside_cropbox', title: 'Off-page text' },
+      { id: 'prompt_injection', title: 'Prompt injection' },
+    ],
   },
 ];
 
@@ -220,11 +235,21 @@ for (const { fixture, groups } of CATEGORY_SWEEP) {
       await expect(group.getByRole('heading', { level: 3, name: title })).toBeVisible();
     }
 
-    if (fixture === 'offpage.pdf') {
-      // Locked-in documentation of the EXPECTED.md deviation: this fixture
-      // must NOT show outside_cropbox or prompt_injection.
-      await expect(page.getByText('outside_cropbox', { exact: true })).not.toBeVisible();
-      await expect(page.getByText('prompt_injection', { exact: true })).not.toBeVisible();
+    if (fixture.startsWith('offpage')) {
+      // The off-page finding must quote the text, not just announce a
+      // category — the whole point of widening the crop box before extraction
+      // is that the hidden sentence can be read.
+      const group = page
+        .locator('section.overflow-hidden')
+        .filter({ has: page.getByText('outside_cropbox', { exact: true }) });
+      await expect(group.getByText(/Ignore all previous instructions/i).first()).toBeVisible();
+    }
+    if (fixture === 'offpage_vertical.pdf') {
+      // ...and the line inside the crop is not reported as off-page.
+      const group = page
+        .locator('section.overflow-hidden')
+        .filter({ has: page.getByText('outside_cropbox', { exact: true }) });
+      await expect(group.getByText(/Visible line inside the cropped area/i)).toHaveCount(0);
     }
   });
 }

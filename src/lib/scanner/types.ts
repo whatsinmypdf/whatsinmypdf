@@ -22,6 +22,15 @@ export interface TextRun {
   // undefined means "not measured", which detectors must treat as "unknown"
   // and report anyway — a missed hidden-text finding is worse than a noisy one.
   bgDarkFraction?: number;
+  // True when this run lies entirely outside the page's CropBox — text that
+  // exists in the file but is never drawn on the visible page.
+  //
+  // Determined by the adapter, not by comparing this bbox against the raw
+  // CropBox array: those are two different coordinate spaces (stext bboxes are
+  // y-down and relative to the crop origin, the /CropBox array is y-up and
+  // absolute), and comparing them directly reports visible text as off-page.
+  // See mupdfAdapter.extractDocument.
+  offPage?: boolean;
 }
 
 export interface PageData {

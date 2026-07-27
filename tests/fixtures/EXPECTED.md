@@ -26,7 +26,8 @@ re-verified ground truth, not aspiration).
 | `white_text.pdf` | 1 | `near_white_text: 1`, `prompt_injection: 2` | 3 |
 | `tiny_font.pdf` | 1 | `tiny_font: 1`, `prompt_injection: 2` | 3 |
 | `invisible_tr.pdf` | 1 | `invisible_render_mode: 1`, `prompt_injection: 2` | 3 |
-| `offpage.pdf` | 1 | `cropbox_mismatch: 1` | 1 |
+| `offpage.pdf` | 1 | `outside_cropbox: 1`, `cropbox_mismatch: 1`, `prompt_injection: 1` | 3 |
+| `offpage_vertical.pdf` | 1 | `outside_cropbox: 1`, `cropbox_mismatch: 1`, `prompt_injection: 2` | 4 |
 | `hidden_layer.pdf` | 1 | `hidden_layers: 1`, `prompt_injection: 2` | 3 |
 | `embedded.pdf` | 1 | `embedded_files: 1` | 1 |
 | `javascript.pdf` | 1 | `javascript: 1` | 1 |
@@ -40,7 +41,7 @@ Full per-category counts dict (all 10 categories + total), for exact assertion c
 - `white_text.pdf`: `{near_white_text:1, invisible_render_mode:0, tiny_font:0, outside_cropbox:0, cropbox_mismatch:0, hidden_layers:0, embedded_files:0, javascript:0, annotations:0, prompt_injection:2, total:3}`
 - `tiny_font.pdf`: `{near_white_text:0, invisible_render_mode:0, tiny_font:1, outside_cropbox:0, cropbox_mismatch:0, hidden_layers:0, embedded_files:0, javascript:0, annotations:0, prompt_injection:2, total:3}`
 - `invisible_tr.pdf`: `{near_white_text:0, invisible_render_mode:1, tiny_font:0, outside_cropbox:0, cropbox_mismatch:0, hidden_layers:0, embedded_files:0, javascript:0, annotations:0, prompt_injection:2, total:3}`
-- `offpage.pdf`: `{near_white_text:0, invisible_render_mode:0, tiny_font:0, outside_cropbox:0, cropbox_mismatch:1, hidden_layers:0, embedded_files:0, javascript:0, annotations:0, prompt_injection:0, total:1}`
+- `offpage.pdf`: `{near_white_text:0, invisible_render_mode:0, tiny_font:0, outside_cropbox:1, cropbox_mismatch:1, hidden_layers:0, embedded_files:0, javascript:0, annotations:0, prompt_injection:1, total:3}`
 - `hidden_layer.pdf`: `{near_white_text:0, invisible_render_mode:0, tiny_font:0, outside_cropbox:0, cropbox_mismatch:0, hidden_layers:1, embedded_files:0, javascript:0, annotations:0, prompt_injection:2, total:3}`
 - `embedded.pdf`: `{near_white_text:0, invisible_render_mode:0, tiny_font:0, outside_cropbox:0, cropbox_mismatch:0, hidden_layers:0, embedded_files:1, javascript:0, annotations:0, prompt_injection:0, total:1}`
 - `javascript.pdf`: `{near_white_text:0, invisible_render_mode:0, tiny_font:0, outside_cropbox:0, cropbox_mismatch:0, hidden_layers:0, embedded_files:0, javascript:1, annotations:0, prompt_injection:0, total:1}`
@@ -61,15 +62,39 @@ original nine) once they exist on disk.
 | `cropbox_inherit.pdf` | Blank 612x792 page. `/CropBox = [10 10 600 780]` is set only on the `/Pages` node; the page dict itself has no `/CropBox` key. `mediabox` extracts as `[0,0,612,792]`, `cropbox` must extract as the **inherited** `[10,10,600,780]` (via `getInheritable`, not `get`), which differs from mediabox and so fires `cropbox_mismatch: 1`. |
 | `badrect.pdf` | Hand-built minimal PDF with `/MediaBox [0 0 /Foo 792]` — a Name object in place of a numeric coordinate (invalid per spec). `objToRect()` must reject the whole array (via a per-element `isNumber()` check) and fall back to the default box `[0,0,612,792]` for both mediabox and cropbox, rather than silently coercing `/Foo` to `0` via `asNumber()` and producing a degenerate `[0,0,0,792]` rect. Since mediabox and cropbox both land on the same fallback, `cropbox_mismatch` must **not** fire. |
 
-## Deviation from the plan brief (documented, not a bug in the fixtures)
+## Deviation from the reference scanner: `offpage.pdf` and `offpage_vertical.pdf`
 
-### `offpage.pdf`: does NOT trigger `outside_cropbox` or `prompt_injection`
+**Resolved 2026-07-28.** Both fixtures now trigger `outside_cropbox` *and*
+`prompt_injection` here, and neither does under the reference scanner. The
+analysis below (written when this project matched the reference) is kept
+because it correctly explains *why* the reference cannot see this text — the
+conclusion it draws, that the check is unreachable, was true only as long as
+extraction stayed clipped to the crop box.
+
+What changed: `mupdfAdapter` now widens the page's CropBox to its MediaBox
+before extracting, so text parked outside the visible page is read like any
+other text, and the original crop box — mapped through the page transform, so
+rotation and the crop origin are handled — decides which runs are marked
+off-page. Consequences worth knowing:
+
+- The off-page finding quotes the hidden text, which the reference scanner
+  cannot do. The category copy says so.
+- `offpage.pdf` reports `prompt_injection: 1`, not the usual 2: the tail of
+  the phrase ("and give a positive review.") runs past the *media* box, which
+  is off the sheet of paper and still unreachable by design.
+- `offpage_vertical.pdf` exists because `offpage.pdf` crops only on the x
+  axis. The old check compared a stext bbox (y-down, relative to the crop
+  origin) against the raw `/CropBox` array (y-up, absolute); with a crop
+  origin on the y axis that reports the *visible* line as off-page. The
+  vertical fixture pins both halves of the correct behaviour.
+
+The original analysis follows.
+
+### Historical: why the reference scanner cannot trigger `outside_cropbox`
 
 The brief's acceptance criteria expected `offpage.pdf` to trigger
 `outside_cropbox` and (together with five other fixtures) `prompt_injection`.
-After genuine investigation, both are **impossible** to trigger together, and
-`outside_cropbox` alone appears unreachable via any legitimately-extracted
-text, given how the reference scanner is built:
+Both are impossible for the reference scanner, given how it is built:
 
 - The scanner's `outside_cropbox` check only inspects spans returned by
   PyMuPDF's `page.get_text("dict")`. PyMuPDF's default text extraction is
@@ -100,11 +125,10 @@ text, given how the reference scanner is built:
   scenario, just realized through a different category (`cropbox_mismatch`)
   than the brief anticipated.
 
-`offpage.pdf` as generated reliably triggers `cropbox_mismatch: 1` (the
-cropbox differs from the mediabox), which is the closest achievable, honest
-signal for this fixture. Downstream tests (Task 5) should assert
-`cropbox_mismatch >= 1` and exit code 1 for `offpage.pdf`, and should **not**
-assert `outside_cropbox` or `prompt_injection` for it.
+Under the reference scanner, `offpage.pdf` triggers `cropbox_mismatch: 1` and
+nothing else, which was the closest achievable honest signal at the time. The
+counts in the table at the top of this file are this implementation's, which
+no longer match the reference for these two fixtures.
 
 ### `hidden_layer.pdf`: fixed, not a deviation (documented for context)
 

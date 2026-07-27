@@ -60,6 +60,15 @@ d, p = base(); p.insert_text((72, 200), INJECTION, fontsize=11, render_mode=3); 
 d, p = base(); p.insert_text((450, 100), INJECTION, fontsize=11)
 p.set_cropbox(fitz.Rect(0, 0, 400, 792)); save(d, "offpage.pdf")
 
+# Vertical crop. offpage.pdf only trims the page horizontally, which is why a
+# coordinate-space bug in the off-page check went unnoticed for so long: with
+# the crop origin on the y axis, the visible line gets reported as off-page.
+# Here the crop keeps the TOP half (PyMuPDF rects are y-down), so the visible
+# line sits inside it and the injection below it does not.
+d, p = base("Visible line inside the cropped area.")
+p.insert_text((72, 700), INJECTION, fontsize=11)
+p.set_cropbox(fitz.Rect(0, 0, 595, 421)); save(d, "offpage_vertical.pdf")
+
 # usage="Hidden" (not on=False) so the reference scanner's `usage == "Hidden"`
 # branch flags this as a hidden layer while the OCG stays "on" and the text
 # remains extractable -- on=False would make MuPDF's text extraction itself

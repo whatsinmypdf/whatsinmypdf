@@ -1,5 +1,5 @@
 import * as mupdf from 'mupdf';
-import { BG_LUMA, luma } from './detect';
+import { BG_LUMA, isOutsideCropbox, luma } from './detect';
 import type { ExtractedDoc, PageData, TextRun } from './types';
 
 type Rect4 = [number, number, number, number];
@@ -113,6 +113,27 @@ function collectHiddenLayers(doc: mupdf.PDFDocument): string[] {
   }
 
   return [...hidden];
+}
+
+// Map a rect through a mupdf matrix by transforming its corners. Used to
+// express the page's original CropBox in the same space as the extracted run
+// bboxes; going through mupdf's own page transform means page rotation is
+// handled by construction rather than by hand-rolled trigonometry.
+function sameRect(a: Rect4, b: Rect4): boolean {
+  return a.every((v, i) => Math.abs(v - b[i]) < 0.01);
+}
+
+function transformRect(r: Rect4, m: mupdf.Matrix): Rect4 {
+  const [a, b, c, d, e, f] = m;
+  const corners: [number, number][] = [
+    [r[0], r[1]],
+    [r[2], r[1]],
+    [r[2], r[3]],
+    [r[0], r[3]],
+  ];
+  const xs = corners.map(([x, y]) => a * x + c * y + e);
+  const ys = corners.map(([x, y]) => b * x + d * y + f);
+  return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
 }
 
 // Pixels per point for the background sample. 1.0 keeps a 9pt line about 9px
@@ -342,7 +363,38 @@ export function extractDocument(data: Uint8Array): ExtractedDoc {
           // CropBox is found anywhere in the inheritance chain.
           const cropbox = objToRect(pobj.getInheritable('CropBox'), mediabox);
 
+          // Text outside the CropBox is dropped by mupdf before extraction —
+          // the very text that "off-page text" as a hiding technique is about,
+          // invisible not just to this category but to every detector,
+          // injection patterns included. So when a page is cropped, widen the
+          // CropBox to the MediaBox first and extract the whole page, then
+          // mark the runs that fall outside the original crop.
+          //
+          // The document was opened from bytes this process owns and is never
+          // written back, so mutating the in-memory page box affects nothing
+          // but this scan. Text beyond the MediaBox stays out of reach: that
+          // is off the sheet of paper entirely, not merely cropped away.
+          const cropped = !sameRect(mediabox, cropbox);
+          let cropInRunSpace: Rect4 | null = null;
+          if (cropped) {
+            try {
+              page.setPageBox('CropBox', mediabox);
+              // Read the transform *after* widening: it is what maps PDF
+              // space to the space the run bboxes will arrive in.
+              cropInRunSpace = transformRect(cropbox, page.getTransform());
+            } catch {
+              // Could not widen — fall back to clipped extraction, where no
+              // run can be outside the crop and none gets marked.
+              cropInRunSpace = null;
+            }
+          }
+
           const runs = extractRuns(page);
+          if (cropInRunSpace) {
+            for (const run of runs) {
+              if (isOutsideCropbox(run.bbox, cropInRunSpace)) run.offPage = true;
+            }
+          }
           if (bgSampledPages < MAX_BG_SAMPLED_PAGES) {
             const before = runs.some((r) => r.bgDarkFraction !== undefined);
             sampleBackgrounds(page, runs);

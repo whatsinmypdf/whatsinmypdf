@@ -25,7 +25,7 @@ const CATEGORIES_ZH: Record<CategoryId, Pick<CategoryInfo, 'title' | 'explanatio
   outside_cropbox: {
     title: '页面外文字',
     explanation:
-      '被裁剪掉的内容会通过下方的裁剪框不匹配一项体现出来。完全落在可视页面范围之外的文字会在文本提取之前就被 PDF 引擎（包括本工具）裁掉，因此这里无法直接引用其内容。',
+      '完全落在可视页面范围之外的文字：它存在于文件里，任何读取整页的工具都能提取到，却从来没有被画在读者看得见的地方。PDF 引擎通常会在提取之前就把这类文字裁掉，本工具特意先按整张纸读一遍，所以下面能直接引用原文。超出整张纸范围（媒体框之外）的文字仍然取不到。',
   },
   cropbox_mismatch: {
     title: '裁剪框不匹配',

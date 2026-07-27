@@ -38,7 +38,7 @@ export const CATEGORIES: Record<CategoryId, CategoryInfo> = {
   outside_cropbox: {
     title: 'Off-page text',
     explanation:
-      'Content hidden by cropping is surfaced through the crop box mismatch check below. Text that sits fully outside the visible page area is clipped by PDF engines — this one included — before it ever reaches text extraction, so it cannot be quoted directly here.',
+      'Text that sits entirely outside the visible page area: present in the file, extractable by any tool that reads the whole page, and never drawn where a reader would see it. PDF engines normally clip it away before extraction — this scanner deliberately reads the full sheet first, so the text itself is quoted below. Text beyond the sheet of paper (outside the media box) stays out of reach.',
     falsePositiveRisk: 'low',
     strongSignal: false,
   },
