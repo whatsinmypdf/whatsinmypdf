@@ -36,6 +36,25 @@ d, p = base(); p.insert_text((72, 200), INJECTION, fontsize=11, color=(1, 1, 1))
 
 d, p = base(); p.insert_text((72, 200), INJECTION, fontsize=2); save(d, "tiny_font.pdf")
 
+# White text on a filled dark rectangle: the single most common shape of
+# legitimate white text in real documents (form section bars, table header
+# rows, dark callouts). Identical to white_text.pdf in the text layer — same
+# colour, same size — so only a look at the rendered background can tell them
+# apart. Guards the background-sampling suppression in mupdfAdapter.
+d, p = base()
+p.draw_rect(fitz.Rect(60, 180, 540, 215), color=(0.1, 0.1, 0.1), fill=(0.1, 0.1, 0.1))
+p.insert_text((72, 205), "Part I  Header text that is white on a dark bar", fontsize=11, color=(1, 1, 1))
+save(d, "white_on_dark.pdf")
+
+# One chart's worth of sub-4pt runs. Real scaled-down figures produce hundreds
+# (worst case measured on a corpus of real papers: 3108 in one document), which
+# the report must not render as one row each. 30 is enough to exercise the
+# collapse-and-expand path without making a slow fixture.
+d, p = base()
+for _i in range(30):
+    p.insert_text((72, 120 + _i * 8), f"axis label {_i}", fontsize=2)
+save(d, "many_tiny.pdf")
+
 d, p = base(); p.insert_text((72, 200), INJECTION, fontsize=11, render_mode=3); save(d, "invisible_tr.pdf")
 
 d, p = base(); p.insert_text((450, 100), INJECTION, fontsize=11)

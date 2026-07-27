@@ -31,6 +31,8 @@ re-verified ground truth, not aspiration).
 | `embedded.pdf` | 1 | `embedded_files: 1` | 1 |
 | `javascript.pdf` | 1 | `javascript: 1` | 1 |
 | `annotation.pdf` | 1 | `annotations: 1`, `prompt_injection: 2` | 3 |
+| `white_on_dark.pdf` | 0 | (none) | 0 |
+| `many_tiny.pdf` | 1 | `tiny_font: 30` | 30 |
 
 Full per-category counts dict (all 10 categories + total), for exact assertion copy-paste:
 
@@ -121,3 +123,19 @@ fire too. This is not a workaround/decoy: the injection text is genuinely
 placed under this OCG in both the original and fixed version; only the OCG's
 declared visibility metadata changed. Verified: `hidden_layers: 1` and
 `prompt_injection: 2`.
+
+## Fixtures that intentionally diverge from the reference scanner
+
+`white_on_dark.pdf` and `many_tiny.pdf` were added after the reference port and
+are **not** cross-validated against `scan_pdf.py`, because they exist to pin
+behaviour this implementation deliberately does not share with it:
+
+- `white_on_dark.pdf` — 11pt `#FFFFFF` text on a filled dark rectangle. The
+  reference scanner reports `near_white_text: 1` (it compares text colour and
+  nothing else). This implementation reports nothing: `mupdfAdapter` renders
+  the page and finds the pixels behind the run are dark, so the text is
+  visible to a reader and not hidden. Identical to `white_text.pdf` in the text
+  layer, which is the point of having both.
+- `many_tiny.pdf` — 30 runs at 2pt, standing in for a scaled-down chart. Used
+  by the e2e suite to pin the report's collapse-and-expand behaviour; the
+  counts agree with the reference scanner, only the rendering of them differs.

@@ -8,13 +8,29 @@
  */
 
 import { findInjections } from './patterns';
-import type { CategoryId, ExtractedDoc, Finding, PageData, ScanReport } from './types';
+import type { CategoryId, ExtractedDoc, Finding, PageData, ScanReport, TextRun } from './types';
 
 type Rect4 = [number, number, number, number];
 
 const MIN_FONT_SIZE = 4;
-const BG_LUMA = 240;
+// Exported because mupdfAdapter needs the same cutoff to decide which runs are
+// worth measuring a background for: sampling every run would mean rendering
+// every page of every document, and only near-white runs can be answered by
+// the measurement.
+export const BG_LUMA = 240;
 const TEXT_TRUNCATE = 200;
+
+// A near-white run is reported only when the pixels behind it are also
+// near-white. At or above this fraction of clearly-darker pixels, the text is
+// visible to a reader — white on a dark figure, a filled table header, a
+// coloured callout — and reporting it is noise.
+//
+// Chosen from a 48-document corpus of real papers and government forms (see
+// tests/sweep/): every one of the 170 near-white findings in that corpus was
+// text of this kind, and all of them sit far above this line, while the
+// white-on-white fixtures sit at 0. There is a lot of daylight between the two
+// populations, so the exact value is not delicate.
+const BG_DARK_FRACTION = 0.1;
 
 const CATEGORY_ORDER: CategoryId[] = [
   'near_white_text',
@@ -33,6 +49,17 @@ const CATEGORY_ORDER: CategoryId[] = [
 // from scan_pdf.py:99-104 (`luma`). TextRun.color arrives already packed as
 // 0xRRGGBB (mupdfAdapter.packColor handles gray/RGB/CMYK uniformly), so this
 // unpacks r/g/b exactly the way the Python does from PyMuPDF's packed int.
+// True when a near-white run was measured against its rendered background and
+// that background turned out to be visibly darker — i.e. a reader can see the
+// text, so it is not hidden.
+//
+// Unmeasured runs (bgDarkFraction undefined: the adapter skipped the page, the
+// render failed, or a caller built the doc by hand) return false and stay
+// reported. Every ambiguity resolves toward showing the finding.
+export function onVisibleBackground(run: TextRun): boolean {
+  return run.bgDarkFraction !== undefined && run.bgDarkFraction >= BG_DARK_FRACTION;
+}
+
 export function luma(colorInt: number): number {
   const r = (colorInt >> 16) & 0xff;
   const g = (colorInt >> 8) & 0xff;
@@ -110,7 +137,7 @@ function detectPage(page: PageData, pageNum: number, findings: Finding[]): void 
   for (const run of page.runs) {
     if (!run.text.trim()) continue; // mirror Python's empty-span guard
 
-    if (luma(run.color) >= BG_LUMA) {
+    if (luma(run.color) >= BG_LUMA && !onVisibleBackground(run)) {
       findings.push({
         category: 'near_white_text',
         page: pageNum,

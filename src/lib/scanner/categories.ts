@@ -31,8 +31,8 @@ export const CATEGORIES: Record<CategoryId, CategoryInfo> = {
   tiny_font: {
     title: 'Tiny font',
     explanation:
-      'Text set below 4pt — too small to read on screen or in print, but fully extractable by software. Occasionally a legitimate figure callout dips this small, so read the text before judging.',
-    falsePositiveRisk: 'medium',
+      'Text set below 4pt — too small to read on screen or in print, but fully extractable by software. The most common source by far is a chart scaled down to fit a page: axis ticks and labels routinely land between 1pt and 4pt, and a single figure can account for hundreds of these. What is worth reading is the text that forms sentences rather than single words and numbers.',
+    falsePositiveRisk: 'high',
     strongSignal: false,
   },
   outside_cropbox: {

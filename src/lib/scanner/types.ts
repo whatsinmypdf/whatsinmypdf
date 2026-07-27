@@ -9,6 +9,19 @@ export interface TextRun {
   size: number; // pt
   color: number; // 0xRRGGBB
   bbox: [number, number, number, number]; // x0,y0,x1,y1 (page coordinates)
+  // Fraction of rendered pixels behind this run that are clearly darker than
+  // near-white, 0..1. Only computed for runs whose own color is near-white —
+  // for every other run it is undefined, because the answer costs a page
+  // render and changes nothing.
+  //
+  // This is what separates "white text on a white page" (hidden) from "white
+  // text on a dark figure or a filled table header" (perfectly visible). The
+  // two are identical in the text layer: same colour, same size, same
+  // everything. Only the pixels behind them differ.
+  //
+  // undefined means "not measured", which detectors must treat as "unknown"
+  // and report anyway — a missed hidden-text finding is worse than a noisy one.
+  bgDarkFraction?: number;
 }
 
 export interface PageData {

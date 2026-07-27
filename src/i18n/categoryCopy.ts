@@ -20,7 +20,7 @@ const CATEGORIES_ZH: Record<CategoryId, Pick<CategoryInfo, 'title' | 'explanatio
   tiny_font: {
     title: '极小字号',
     explanation:
-      '字号小于 4pt，屏幕或打印都看不清，但软件仍能完整提取。极少数情况下，图表的小号标注也会用到这么小的字号，所以先读一读文字内容再下判断。',
+      '字号小于 4pt，屏幕或打印都看不清，但软件仍能完整提取。最常见的来源是被缩小后放进版面的图表：坐标轴刻度和标签经常落在 1pt 到 4pt 之间，一张图就能产生几百条。真正值得读的是那些成句子的文字，而不是单个的词和数字。',
   },
   outside_cropbox: {
     title: '页面外文字',

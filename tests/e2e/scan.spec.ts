@@ -21,6 +21,30 @@ test('clean PDF reports all clear', async ({ page }) => {
   await expect(page.getByText('No hidden content found')).toBeVisible({ timeout: 30_000 });
 });
 
+test('white text on a dark bar is not reported as hidden', async ({ page }) => {
+  await gotoReady(page);
+  await page.setInputFiles('input[type=file]', 'tests/fixtures/white_on_dark.pdf');
+  // Same colour and size as white_text.pdf in the text layer; only the pixels
+  // behind it differ, which is what the adapter's background sampling reads.
+  await expect(page.getByText('No hidden content found')).toBeVisible({ timeout: 30_000 });
+});
+
+test('a group with many findings collapses, and expands on request', async ({ page }) => {
+  await gotoReady(page);
+  await page.setInputFiles('input[type=file]', 'tests/fixtures/many_tiny.pdf');
+
+  const group = page
+    .locator('section.overflow-hidden')
+    .filter({ has: page.getByText('tiny_font', { exact: true }) });
+  await expect(group).toBeVisible({ timeout: 30_000 });
+  // 30 findings in the fixture, 12 rendered until asked otherwise: a real
+  // scaled-down chart can carry hundreds, and one DOM node each janks the page.
+  await expect(group.locator('li')).toHaveCount(12);
+
+  await group.getByRole('button', { name: 'Show all 30' }).click();
+  await expect(group.locator('li')).toHaveCount(30);
+});
+
 test('a report offers the feedback link, and that link carries nothing about the scan', async ({
   page,
 }) => {

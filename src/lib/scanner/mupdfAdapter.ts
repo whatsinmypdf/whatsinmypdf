@@ -1,4 +1,5 @@
 import * as mupdf from 'mupdf';
+import { BG_LUMA, luma } from './detect';
 import type { ExtractedDoc, PageData, TextRun } from './types';
 
 type Rect4 = [number, number, number, number];
@@ -112,6 +113,86 @@ function collectHiddenLayers(doc: mupdf.PDFDocument): string[] {
   }
 
   return [...hidden];
+}
+
+// Pixels per point for the background sample. 1.0 keeps a 9pt line about 9px
+// tall, which is enough to tell a white page from a dark figure without
+// rendering anything close to full quality.
+const BG_SAMPLE_SCALE = 1;
+// A sampled pixel this dark or darker is "clearly not a near-white background".
+// Deliberately below BG_LUMA (240): a #F5F5F5 page must still read as white,
+// or white-on-very-light-grey — a real hiding technique — would be suppressed.
+const BG_DARK_PIXEL_LUMA = 200;
+// Rendering is the one expensive thing this scanner does, so it is bounded.
+// Beyond this many pages carrying near-white text in a single document, runs
+// are left unmeasured and their findings are reported unfiltered.
+const MAX_BG_SAMPLED_PAGES = 40;
+
+// Measure what is behind each near-white run, in place.
+//
+// The text layer cannot distinguish hidden white-on-white text from white text
+// on a dark figure or a filled table header: both are #FFFFFF at a normal size.
+// The only difference is in the pixels, so for pages that actually contain
+// near-white text — a small minority of real documents — render the page once
+// and look.
+//
+// Failure is silent by design: if anything here throws, runs keep
+// bgDarkFraction === undefined and the detector reports them as before.
+function sampleBackgrounds(page: mupdf.PDFPage, runs: TextRun[]): void {
+  const candidates = runs.filter((r) => luma(r.color) >= BG_LUMA && r.text.trim());
+  if (candidates.length === 0) return;
+
+  let pixmap: mupdf.Pixmap | undefined;
+  try {
+    const bounds = page.getBounds();
+    pixmap = page.toPixmap(
+      mupdf.Matrix.scale(BG_SAMPLE_SCALE, BG_SAMPLE_SCALE),
+      mupdf.ColorSpace.DeviceGray, // one component per pixel; we only need luma
+      false,
+      // Annotations and widgets are part of what a reader sees, so they are
+      // part of the background: text over a filled form widget is not hidden.
+      true,
+    );
+    const w = pixmap.getWidth();
+    const h = pixmap.getHeight();
+    const stride = pixmap.getStride();
+    const comps = pixmap.getNumberOfComponents();
+    const px = pixmap.getPixels();
+
+    for (const run of candidates) {
+      // stext quads and getBounds() are in the same space, so the mapping is
+      // just "offset by the page origin, then scale". The origin is not
+      // always 0: a cropped page can start at a non-zero x0/y0.
+      const x0 = Math.floor((run.bbox[0] - bounds[0]) * BG_SAMPLE_SCALE);
+      const y0 = Math.floor((run.bbox[1] - bounds[1]) * BG_SAMPLE_SCALE);
+      const x1 = Math.ceil((run.bbox[2] - bounds[0]) * BG_SAMPLE_SCALE);
+      const y1 = Math.ceil((run.bbox[3] - bounds[1]) * BG_SAMPLE_SCALE);
+
+      const cx0 = Math.max(0, Math.min(w, x0));
+      const cy0 = Math.max(0, Math.min(h, y0));
+      const cx1 = Math.max(0, Math.min(w, x1));
+      const cy1 = Math.max(0, Math.min(h, y1));
+      // Fully off-page text has no background to measure. Leaving it
+      // unmeasured is right: off-page white text is exactly the case that
+      // should still be reported.
+      if (cx1 <= cx0 || cy1 <= cy0) continue;
+
+      let dark = 0;
+      let total = 0;
+      for (let y = cy0; y < cy1; y++) {
+        const row = y * stride;
+        for (let x = cx0; x < cx1; x++) {
+          if (px[row + x * comps] <= BG_DARK_PIXEL_LUMA) dark++;
+          total++;
+        }
+      }
+      if (total > 0) run.bgDarkFraction = dark / total;
+    }
+  } catch {
+    // Leave every candidate unmeasured; detect() then reports them all.
+  } finally {
+    pixmap?.destroy();
+  }
 }
 
 function extractRuns(page: mupdf.PDFPage): TextRun[] {
@@ -244,6 +325,7 @@ export function extractDocument(data: Uint8Array): ExtractedDoc {
 
     const FALLBACK_BOX: Rect4 = [0, 0, 612, 792];
     const pages: PageData[] = [];
+    let bgSampledPages = 0;
     for (let i = 0; i < doc.countPages(); i++) {
       const page = doc.loadPage(i);
       try {
@@ -261,6 +343,13 @@ export function extractDocument(data: Uint8Array): ExtractedDoc {
           const cropbox = objToRect(pobj.getInheritable('CropBox'), mediabox);
 
           const runs = extractRuns(page);
+          if (bgSampledPages < MAX_BG_SAMPLED_PAGES) {
+            const before = runs.some((r) => r.bgDarkFraction !== undefined);
+            sampleBackgrounds(page, runs);
+            // Only count pages that actually rendered — a page with no
+            // near-white text costs nothing and must not eat the budget.
+            if (!before && runs.some((r) => r.bgDarkFraction !== undefined)) bgSampledPages++;
+          }
           const contentStreams = extractContentStreams(pobj);
           const annotations: { type: string; content: string }[] = [];
           for (const a of page.getAnnotations()) {

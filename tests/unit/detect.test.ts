@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, it, expect } from 'vitest';
 import { detect, luma, isOutsideCropbox } from '../../src/lib/scanner/detect';
+import { extractDocument } from '../../src/lib/scanner/mupdfAdapter';
 import { scanPdf } from '../../src/lib/scanner/scanPdf';
 import type { ExtractedDoc, PageData } from '../../src/lib/scanner/types';
 
@@ -91,6 +92,33 @@ describe('detect() — hand-built boundary tests', () => {
       }),
     ]);
     expect(detect(doc, 'x.pdf').counts.tiny_font).toBe(0);
+  });
+
+  it('near_white_text: a measured dark background suppresses, light or unmeasured does not', () => {
+    const run = (text: string, bgDarkFraction?: number) => ({
+      text,
+      size: 10,
+      color: 0xffffff,
+      bbox: [0, 0, 10, 10] as [number, number, number, number],
+      bgDarkFraction,
+    });
+    const doc = makeDoc([
+      makePage({
+        runs: [
+          run('on a dark bar', 0.9),
+          run('exactly at the cutoff', 0.1), // boundary: suppressed
+          run('just under the cutoff', 0.099),
+          run('on a white page', 0),
+          run('never measured', undefined), // fail toward reporting
+        ],
+      }),
+    ]);
+    const report = detect(doc, 'backgrounds.pdf');
+    expect(report.findings.filter((f) => f.category === 'near_white_text').map((f) => f.text)).toEqual([
+      'just under the cutoff',
+      'on a white page',
+      'never measured',
+    ]);
   });
 
   it('near_white_text: luma exactly 240 is flagged, luma 239-ish is not', () => {
@@ -290,6 +318,40 @@ describe('scanPdf() — 9-fixture integration against EXPECTED.md ground truth',
       cropbox_mismatch: 0, hidden_layers: 0, embedded_files: 0, javascript: 0,
       annotations: 0, prompt_injection: 2, total: 3,
     });
+  });
+
+  // The pair that matters for the background check: white_text.pdf and
+  // white_on_dark.pdf are indistinguishable in the text layer — #FFFFFF at
+  // 11pt in both — and differ only in what is painted behind the glyphs. The
+  // test above must keep finding one; this one must find nothing. A corpus of
+  // 48 real papers and government forms produced 170 findings of this second
+  // kind and none of the first (see tests/sweep/).
+  it('white_on_dark.pdf reports nothing: the text is visible against its background', () => {
+    const report = scanPdf(load('white_on_dark.pdf'), 'white_on_dark.pdf');
+    expect(report.counts.near_white_text).toBe(0);
+    expect(report.counts.total).toBe(0);
+  });
+
+  it('white_on_dark.pdf measures the background rather than skipping it', () => {
+    // Guards against the suppression passing for the wrong reason: if the
+    // sampling silently failed, bgDarkFraction would be undefined and the
+    // finding would be gone only because the run was never extracted.
+    const doc = extractDocument(load('white_on_dark.pdf'));
+    const white = doc.pages[0].runs.filter((r) => r.color === 0xffffff);
+    expect(white.length).toBeGreaterThan(0);
+    for (const run of white) {
+      expect(run.bgDarkFraction, `run ${JSON.stringify(run.text)} was not measured`).toBeDefined();
+      expect(run.bgDarkFraction).toBeGreaterThan(0.1);
+    }
+
+    // ...and the hidden case measures as light, which is why it survives.
+    const hidden = extractDocument(load('white_text.pdf'));
+    const hiddenWhite = hidden.pages[0].runs.filter((r) => r.color === 0xffffff);
+    expect(hiddenWhite.length).toBeGreaterThan(0);
+    for (const run of hiddenWhite) {
+      expect(run.bgDarkFraction).toBeDefined();
+      expect(run.bgDarkFraction).toBeLessThan(0.1);
+    }
   });
 
   it('tiny_font.pdf', () => {

@@ -1,4 +1,4 @@
-import type { Ref } from 'react';
+import { useState, type Ref } from 'react';
 import { ShieldCheck, TriangleAlert, FileText, Flag } from 'lucide-react';
 import clsx from 'clsx';
 import type { CategoryId, Finding, ScanReport } from '../lib/scanner/types';
@@ -88,6 +88,15 @@ const toneAccent: Record<Tone, string> = {
   neutral: 'border-l-primary',
 };
 
+// A single scaled-down chart can produce hundreds of sub-4pt runs — the worst
+// case measured on a corpus of real papers was 3108 findings in one document,
+// which as 3108 DOM nodes is a page that janks on open and buries whatever
+// else the scan found. Show a readable slice, keep the rest one click away,
+// and stop rendering entirely at HARD_CAP: past that the JSON report is the
+// right tool, and it always contains every finding.
+const VISIBLE_FINDINGS = 12;
+const HARD_CAP = 300;
+
 function CategoryGroup({
   id,
   items,
@@ -99,8 +108,11 @@ function CategoryGroup({
   categories: Record<CategoryId, CategoryInfo>;
   t: UiStrings;
 }) {
+  const [expanded, setExpanded] = useState(false);
   const info = categories[id];
   const tone = toneFor(id, info);
+  const visible = items.slice(0, expanded ? HARD_CAP : VISIBLE_FINDINGS);
+  const pageCount = new Set(items.map((f) => f.page).filter((p) => p != null)).size;
   return (
     <section
       className={clsx(
@@ -122,6 +134,7 @@ function CategoryGroup({
           <span className="ml-auto flex items-center gap-2">
             <span className="text-sm font-medium tabular-nums text-muted-foreground">
               {items.length} {t.report.finding(items.length)}
+              {pageCount > 1 && ` ${t.report.group.spanningPages(pageCount)}`}
             </span>
             <RiskBadge risk={info.falsePositiveRisk} t={t} />
           </span>
@@ -131,10 +144,27 @@ function CategoryGroup({
         </p>
       </header>
       <ul className="bg-background/40">
-        {items.map((f, i) => (
+        {visible.map((f, i) => (
           <FindingRow key={i} finding={f} t={t} />
         ))}
       </ul>
+      {visible.length < items.length && (
+        <div className="border-t border-border/70 px-4 py-3 sm:px-5">
+          {expanded ? (
+            <p className="text-sm text-muted-foreground">
+              {t.report.group.renderCap(visible.length, items.length)}
+            </p>
+          ) : (
+            <button
+              type="button"
+              className="rounded border border-border bg-background px-3 py-1.5 text-sm font-medium hover:bg-muted"
+              onClick={() => setExpanded(true)}
+            >
+              {t.report.group.showAll(items.length)}
+            </button>
+          )}
+        </div>
+      )}
     </section>
   );
 }

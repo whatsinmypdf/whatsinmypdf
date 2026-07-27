@@ -45,6 +45,19 @@ documents a few places where perfect parity wasn't reachable (e.g.
 `offpage.pdf`) and why, verified against the reference scanner's actual
 output rather than the original plan's assumptions.
 
+One divergence is deliberate. `near_white_text` here also looks at what is
+painted *behind* the text: for pages containing near-white runs, the adapter
+renders the page and measures how dark the pixels under each run are, and a run
+sitting on a visibly darker background is not reported. The reference script
+compares text colour alone, which means it flags every white-on-dark form
+header, table header row and figure label as hidden text. On a 48-document
+corpus of real papers and government forms that accounted for all 170
+near-white findings; with the background check, 2 documents still report, one
+of them genuinely invisible text (0.01pt white runs in an IRS publication).
+Rendering is bounded: only pages that contain near-white text are rendered, at
+most 40 per document, and any failure leaves the runs unmeasured and reported
+as before. See `tests/sweep/` for the measurement harness.
+
 ## Dev commands
 
 ```bash

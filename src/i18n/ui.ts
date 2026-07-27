@@ -66,6 +66,11 @@ export interface UiStrings {
       linkLabel: string;
       note: string;
     };
+    group: {
+      spanningPages: (n: number) => string;
+      showAll: (n: number) => string;
+      renderCap: (shown: number, total: number) => string;
+    };
   };
 }
 
@@ -149,6 +154,12 @@ export const en: UiStrings = {
       linkLabel: 'Report a false positive or a missed detection',
       note: '. Opens GitHub. Nothing from this scan is attached — your file never left this browser, so you decide what to share.',
     },
+    group: {
+      spanningPages: (n) => (n === 1 ? 'on 1 page' : `across ${n} pages`),
+      showAll: (n) => `Show all ${n}`,
+      renderCap: (shown, total) =>
+        `Showing the first ${shown} of ${total}. The JSON report has every one of them.`,
+    },
   },
 };
 
@@ -218,6 +229,11 @@ export const zh: UiStrings = {
       prompt: '结果看起来不对？',
       linkLabel: '报告误报或漏报',
       note: '。会跳转到 GitHub，本次扫描的任何内容都不会被附带过去。文件始终留在你的浏览器里，分享什么由你决定。',
+    },
+    group: {
+      spanningPages: (n) => `分布在 ${n} 页`,
+      showAll: (n) => `展开全部 ${n} 条`,
+      renderCap: (shown, total) => `这里只显示前 ${shown} 条，共 ${total} 条，完整列表在 JSON 报告里。`,
     },
   },
 };
