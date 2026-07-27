@@ -1,5 +1,14 @@
 # Cloudflare Pages header injection file. Applies to every response.
 #
+# The two cloudflareinsights.com hosts are Cloudflare Web Analytics, enabled
+# at the zone level with automatic injection: Cloudflare rewrites the HTML at
+# the edge to add its beacon <script>, so the tag exists in production but not
+# in dist/ or in `astro preview`. static.cloudflareinsights.com serves the
+# beacon script; cloudflareinsights.com receives its POST. Without both, the
+# browser blocks a script the origin itself injected, which reads as a broken
+# CSP in every visitor's console. Disclosed on /privacy; asserted by
+# tests/smoke/prod.spec.ts, which allows these two hosts and nothing else.
+#
 # The script-src and style-src hashes below cover Astro's own inline
 # hydration boot scripts and its astro-island CSS reset — these are the only
 # inline <script>/<style> tags this build emits (verified against dist/*.html
@@ -15,7 +24,7 @@
 # script-src only governs script elements that would actually execute, and
 # a non-JS type never executes as a script.
 /*
-  Content-Security-Policy: default-src 'self'; connect-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-QzWFZi+FLIx23tnm9SBU4aEgx4x8DsuASP07mfqol/c=' 'sha256-SaCkFfPruIdTXT8/97JArQmGxiJAL2o4bBDvSgJ5y3Q='; style-src 'self' 'sha256-vv9IoKo7BSLbWcUHr3tNmfNVmm5L/9Cfn2H6LMk7/ow='; img-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'
+  Content-Security-Policy: default-src 'self'; connect-src 'self' https://cloudflareinsights.com; script-src 'self' 'wasm-unsafe-eval' https://static.cloudflareinsights.com 'sha256-QzWFZi+FLIx23tnm9SBU4aEgx4x8DsuASP07mfqol/c=' 'sha256-SaCkFfPruIdTXT8/97JArQmGxiJAL2o4bBDvSgJ5y3Q='; style-src 'self' 'sha256-vv9IoKo7BSLbWcUHr3tNmfNVmm5L/9Cfn2H6LMk7/ow='; img-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=()

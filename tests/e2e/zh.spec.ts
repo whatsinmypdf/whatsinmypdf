@@ -47,6 +47,12 @@ test('scanning white_text.pdf through the zh scanner renders zh category titles'
     .filter({ has: page.getByText('near_white_text', { exact: true }) });
   await expect(nearWhiteGroup).toBeVisible();
   await expect(nearWhiteGroup.getByRole('heading', { level: 3, name: '近白色文字' })).toBeVisible();
+
+  // Same feedback link as the en report, localized label, identical href.
+  await expect(page.getByRole('link', { name: '报告误报或漏报' })).toHaveAttribute(
+    'href',
+    'https://github.com/whatsinmypdf/whatsinmypdf/issues/new/choose',
+  );
 });
 
 test('a missing zh path serves the bilingual 404 page', async ({ page }) => {

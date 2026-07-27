@@ -1,0 +1,59 @@
+name: False positive (flagged something harmless)
+description: The scanner reported a finding on a PDF that is actually fine.
+labels: ['false-positive']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The scan runs entirely in your browser, so nothing about your file has
+        reached us — everything below is what you choose to share.
+
+        **GitHub issues are public.** Do not attach a PDF, a JSON report, or a
+        text excerpt you would not publish. The JSON report contains extracted
+        text from the document. Redact it, or reproduce the problem with a
+        throwaway file you made yourself.
+
+  - type: input
+    id: category
+    attributes:
+      label: Which category fired?
+      description: The lowercase id on the finding group, e.g. `near_white_text` or `tiny_font`.
+      placeholder: near_white_text
+    validations:
+      required: true
+
+  - type: textarea
+    id: why-harmless
+    attributes:
+      label: Why is this finding wrong?
+      description: What is actually in the document at that spot, and why is it legitimate?
+    validations:
+      required: true
+
+  - type: input
+    id: producer
+    attributes:
+      label: What produced the PDF?
+      description: >
+        The "Producer" and "Creator" values shown in the report's Document
+        section, or just the app you exported from (Word, LaTeX, Canva, Chrome
+        print-to-PDF…). Most false positives are exporter quirks, so this is
+        usually the single most useful field.
+      placeholder: e.g. Microsoft Word / pdfTeX-1.40.25 / Skia\/PDF m120
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Can you share a file that reproduces it?
+      description: >
+        A minimal PDF that triggers the same finding, if you can make one
+        safely. Skip this if you cannot share anything — the fields above are
+        often enough.
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and OS
+      placeholder: e.g. Chrome 141 on macOS 15

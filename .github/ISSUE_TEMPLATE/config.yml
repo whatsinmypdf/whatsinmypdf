@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: How the detection works
+    url: https://whatsinmypdf.com/learn
+    about: What each category means and what a structural scan cannot see. Read this before filing a missed detection.
+  - name: Report a security vulnerability
+    url: https://github.com/whatsinmypdf/whatsinmypdf/security/advisories/new
+    about: Privately report a vulnerability in the scanner or the site. Do not open a public issue for these.

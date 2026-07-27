@@ -1,0 +1,15 @@
+# Security contact for whatsinmypdf.com (RFC 9116).
+#
+# This site is a static, client-side scanner: no accounts, no server-side
+# processing, no user data at rest, no analytics. The attack surface worth
+# reporting on is the scanner code itself (src/lib/scanner/), the Content
+# Security Policy in public/_headers, and the dependency chain (mupdf WASM).
+#
+# Expires must stay in the future or the file is invalid (RFC 9116 5.5).
+# Bump it on any release after mid-2027.
+
+Contact: https://github.com/whatsinmypdf/whatsinmypdf/security/advisories/new
+Expires: 2027-07-27T00:00:00.000Z
+Preferred-Languages: en, zh
+Canonical: https://whatsinmypdf.com/.well-known/security.txt
+Policy: https://github.com/whatsinmypdf/whatsinmypdf/blob/main/README.md

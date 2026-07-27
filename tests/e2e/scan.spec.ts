@@ -21,6 +21,23 @@ test('clean PDF reports all clear', async ({ page }) => {
   await expect(page.getByText('No hidden content found')).toBeVisible({ timeout: 30_000 });
 });
 
+test('a report offers the feedback link, and that link carries nothing about the scan', async ({
+  page,
+}) => {
+  await gotoReady(page);
+  await page.setInputFiles('input[type=file]', 'tests/fixtures/white_text.pdf');
+  await expect(page.getByText('prompt_injection', { exact: true })).toBeVisible({
+    timeout: 30_000,
+  });
+
+  // The exact-href assertion is the privacy check, not just a smoke test: any
+  // query string, fragment, or prefilled issue body appended here would leak
+  // details of the file the visitor just scanned into an outbound URL.
+  await expect(
+    page.getByRole('link', { name: 'Report a false positive or a missed detection' }),
+  ).toHaveAttribute('href', 'https://github.com/whatsinmypdf/whatsinmypdf/issues/new/choose');
+});
+
 test('white-text injection PDF reports findings with evidence', async ({ page }) => {
   await gotoReady(page);
   await page.setInputFiles('input[type=file]', 'tests/fixtures/white_text.pdf');

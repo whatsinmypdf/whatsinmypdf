@@ -1,5 +1,5 @@
 import type { Ref } from 'react';
-import { ShieldCheck, TriangleAlert, FileText } from 'lucide-react';
+import { ShieldCheck, TriangleAlert, FileText, Flag } from 'lucide-react';
 import clsx from 'clsx';
 import type { CategoryId, Finding, ScanReport } from '../lib/scanner/types';
 import type { CategoryInfo } from '../lib/scanner/categories';
@@ -209,6 +209,31 @@ export default function ReportView({
           <MetaRow label={t.report.document.producer} value={report.producer} />
           <MetaRow label={t.report.document.creator} value={report.creator} />
         </dl>
+      </section>
+
+      {/* Feedback. False positives and missed detections are the only signal
+          this project gets about detection quality — the scan is local, so
+          nothing is reported back automatically and never should be. The link
+          is a plain URL with no query string for exactly that reason: it must
+          carry nothing about the file just scanned. */}
+      <section className="flex items-start gap-3 text-sm text-muted-foreground">
+        <Flag className="mt-0.5 size-4 shrink-0" aria-hidden />
+        {/* No spacing or punctuation between the three strings here: the
+            separator after the prompt and the stop after the link are part of
+            the localized strings themselves, because zh uses full-width
+            punctuation and no space where en uses "? " and ". ". */}
+        <p className="max-w-prose leading-relaxed">
+          {t.report.feedback.prompt}
+          <a
+            className="underline"
+            href="https://github.com/whatsinmypdf/whatsinmypdf/issues/new/choose"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            {t.report.feedback.linkLabel}
+          </a>
+          {t.report.feedback.note}
+        </p>
       </section>
     </div>
   );

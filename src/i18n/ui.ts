@@ -61,6 +61,11 @@ export interface UiStrings {
       producer: string;
       creator: string;
     };
+    feedback: {
+      prompt: string;
+      linkLabel: string;
+      note: string;
+    };
   };
 }
 
@@ -136,6 +141,14 @@ export const en: UiStrings = {
       producer: 'Producer',
       creator: 'Creator',
     },
+    // prompt and note carry their own spacing and punctuation: ReportView
+    // concatenates prompt + link + note with nothing in between, so each
+    // locale controls its own separators.
+    feedback: {
+      prompt: 'Does this result look wrong? ',
+      linkLabel: 'Report a false positive or a missed detection',
+      note: '. Opens GitHub. Nothing from this scan is attached — your file never left this browser, so you decide what to share.',
+    },
   },
 };
 
@@ -200,6 +213,11 @@ export const zh: UiStrings = {
       pages: '页数',
       producer: '生成程序',
       creator: '创建程序',
+    },
+    feedback: {
+      prompt: '结果看起来不对？',
+      linkLabel: '报告误报或漏报',
+      note: '。会跳转到 GitHub，本次扫描的任何内容都不会被附带过去。文件始终留在你的浏览器里，分享什么由你决定。',
     },
   },
 };

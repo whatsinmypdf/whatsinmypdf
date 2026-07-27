@@ -72,3 +72,39 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: 9e4d0b6ce6b452e73c5548fd583f263b
           command: pages deploy dist --project-name=pdfstowaway
+
+  smoke:
+    # Post-deploy verification against the live site. `test` proves the build
+    # is good; this proves the deployment is. Things only this job can catch:
+    # a CSP in public/_headers that blocks the real hydration script, a wrong
+    # Content-Type on the .wasm asset, a Pages routing change. A failure here
+    # means production is broken even though CI went green.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers (chromium only)
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Wait for the deployment to reach the production alias
+        run: sleep 30
+
+      - name: Smoke test production
+        run: pnpm smoke

@@ -1,0 +1,56 @@
+name: Missed detection (hidden content the scan did not find)
+description: A PDF contains hidden content or an injection attempt, and the scan came back clean or incomplete.
+labels: ['false-negative']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The scan runs entirely in your browser, so nothing about your file has
+        reached us — everything below is what you choose to share.
+
+        **GitHub issues are public.** Do not attach a PDF, a JSON report, or a
+        text excerpt you would not publish.
+
+        Some limits are deliberate and documented, not bugs: text baked into
+        images, glyph-substitution tricks, and semantic obfuscation are out of
+        scope for a structural scan. See
+        https://whatsinmypdf.com/learn/how-to-check-a-pdf-for-hidden-text.
+
+  - type: textarea
+    id: hidden-content
+    attributes:
+      label: What is hidden in the file, and how is it hidden?
+      description: >
+        E.g. "an instruction to the AI reviewer, set in 0.5% grey on white" or
+        "text placed under an image via an OCG layer".
+    validations:
+      required: true
+
+  - type: textarea
+    id: how-found
+    attributes:
+      label: How did you find it?
+      description: Select-all-and-paste, `pdftotext`, another scanner, the source document — whatever revealed it.
+    validations:
+      required: true
+
+  - type: input
+    id: producer
+    attributes:
+      label: What produced the PDF?
+      description: The "Producer" / "Creator" values from the report's Document section, or the app it was exported from.
+      placeholder: e.g. Microsoft Word / pdfTeX-1.40.25
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Can you share a file that reproduces it?
+      description: A minimal PDF you can publish, if you are able to make one.
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and OS
+      placeholder: e.g. Chrome 141 on macOS 15
