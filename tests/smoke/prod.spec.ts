@@ -94,6 +94,65 @@ test('a second scan still works with the network cut', async ({ page, context })
   await context.setOffline(false);
 });
 
+// The homepage's second check, end to end against the deployed site: visit,
+// scan, pull the plug, reload, scan again. It depends on real response headers
+// (the origin's `Vary: Origin` is why the worker has to match with ignoreVary)
+// and on the deployed service worker actually taking control, neither of which
+// a local preview proves.
+test('after one visit the deployed site reloads and scans with the network cut', async ({
+  page,
+  context,
+}) => {
+  await gotoReady(page, '/');
+  await page.waitForFunction(() => navigator.serviceWorker.controller !== null, null, {
+    timeout: 60_000,
+  });
+
+  await page.getByRole('button', { name: 'Résumé with hidden instructions', exact: true }).click();
+  await expect(
+    page
+      .locator('section.overflow-hidden')
+      .filter({ has: page.getByText('prompt_injection', { exact: true }) }),
+  ).toBeVisible({ timeout: 60_000 });
+
+  // Wait on the cache reaching the state that makes the claim true, not on a
+  // duration: the second warm-up pass runs when the browser goes idle.
+  await page.waitForFunction(
+    async () => {
+      const cache = await caches.open('whatsinmypdf-v1');
+      const paths = (await cache.keys()).map((r) => new URL(r.url).pathname);
+      return (
+        paths.some((p) => p.includes('client.')) &&
+        paths.some((p) => p.includes('Scanner.')) &&
+        paths.some((p) => p.endsWith('.wasm'))
+      );
+    },
+    null,
+    { timeout: 60_000 },
+  );
+
+  await context.setOffline(true);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => !document.querySelector('astro-island')?.hasAttribute('ssr'), null, {
+    timeout: 60_000,
+  });
+  await page.setInputFiles('input[type=file]', 'tests/fixtures/hidden_layer.pdf');
+  await expect(
+    page
+      .locator('section.overflow-hidden')
+      .filter({ has: page.getByText('hidden_layers', { exact: true }) }),
+  ).toBeVisible({ timeout: 60_000 });
+  await context.setOffline(false);
+});
+
+test('the service worker script is never served from a stale cache', async ({ request }) => {
+  const res = await request.get('/sw.js');
+  expect(res.status()).toBe(200);
+  // Cloudflare dropped a bare `no-cache` here without a word; this catches the
+  // rule going quiet again after a config or platform change.
+  expect(res.headers()['cache-control']).toContain('must-revalidate');
+});
+
 test('hashed build assets are served immutable', async ({ request }) => {
   const html = await (await request.get('/')).text();
   const asset = html.match(/\/_astro\/[A-Za-z0-9_.-]+\.js/)?.[0];

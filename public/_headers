@@ -46,8 +46,15 @@
 /_astro/*
   Cache-Control: public, max-age=31536000, immutable
 
-# The service worker script decides how long every other cached thing lives, so
-# a stale copy of it outlives a deploy in a way nothing else can. Always
-# revalidate.
+# The service worker script decides how long everything else stays cached, so a
+# stale copy of it outlives a deploy in a way nothing else can. Belt and braces:
+# browsers already bypass the HTTP cache when checking a worker script for
+# updates (updateViaCache defaults to 'imports'), so this is defence in depth
+# rather than the thing that makes updates work.
+#
+# Spelled out as max-age=0 + must-revalidate rather than `no-cache`: Cloudflare
+# silently ignored the bare `no-cache` form here — the deployed response kept
+# its default max-age=14400 — while the same file's /_astro/* rule applied
+# fine. Asserted in tests/smoke/prod.spec.ts so it cannot go quiet again.
 /sw.js
-  Cache-Control: no-cache
+  Cache-Control: public, max-age=0, must-revalidate
