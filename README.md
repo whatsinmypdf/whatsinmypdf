@@ -19,12 +19,12 @@ This isn't just a claim in the copy: `tests/e2e/scan.spec.ts` includes a test
 requested") that asserts on the page's actual network traffic during a scan.
 If a future change accidentally introduced an upload, that test would fail.
 
-The site uses Cloudflare Web Analytics for visit counts — cookie-free, no
-cross-site tracking, and injected at the edge by Cloudflare rather than bundled
-here, which is why you will not find it in this repo. It sees page URLs and
-load timings, never the scanned file or its findings, which never leave the
-browser to begin with. It is disclosed on `/privacy`, and the CSP in
-`public/_headers` allows its two hosts and no other third party.
+The site ships with no analytics or tracking scripts of any kind, and no
+third party is allowed to run one: the CSP in `public/_headers` permits
+scripts from this origin only. Cloudflare Web Analytics was briefly injected
+at the edge by a zone-level setting — that setting is off, and
+`tests/smoke/prod.spec.ts` asserts that a live scan on the deployed site
+contacts no host but its own origin.
 
 ## License
 

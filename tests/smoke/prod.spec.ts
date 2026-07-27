@@ -19,22 +19,15 @@ function collectCspErrors(page: Page): string[] {
   return violations;
 }
 
-// Cloudflare Web Analytics, injected into the HTML at the edge (see the
-// comment in public/_headers). It is the only third party the deployed page is
-// allowed to talk to, and it is disclosed on /privacy. Anything else appearing
-// during a scan is a regression worth failing the deploy over.
-const ALLOWED_THIRD_PARTY_HOSTS = ['static.cloudflareinsights.com', 'cloudflareinsights.com'];
-
 test('the deployed scanner loads its WASM engine and produces a real report', async ({
   page,
   baseURL,
 }) => {
   const cspErrors = collectCspErrors(page);
-  const unexpectedHosts: string[] = [];
+  const offOrigin: string[] = [];
   const origin = new URL(baseURL!).hostname;
   page.on('request', (r) => {
-    const host = new URL(r.url()).hostname;
-    if (host !== origin && !ALLOWED_THIRD_PARTY_HOSTS.includes(host)) unexpectedHosts.push(r.url());
+    if (new URL(r.url()).hostname !== origin) offOrigin.push(r.url());
   });
 
   await gotoReady(page, '/');
@@ -49,12 +42,14 @@ test('the deployed scanner loads its WASM engine and produces a real report', as
   await expect(group).toBeVisible({ timeout: 60_000 });
 
   expect(cspErrors).toEqual([]);
-  // The privacy guarantee, asserted against production and not just a local
-  // preview: during a full scan the page talks to its own origin and to the
-  // disclosed analytics host, and to nothing else. The stronger claim — that
-  // no request anywhere carries the PDF — is covered by the e2e suite, which
+  // The homepage tells visitors to open their network tab during a scan and
+  // see for themselves. This is that check, run against production on every
+  // deploy: a full scan contacts this origin and nothing else — no analytics,
+  // no CDN, no font host. Edge-injected scripts count too, which is how the
+  // zone's Web Analytics beacon was caught. The stronger claim — that no
+  // request anywhere carries the PDF — is covered by the e2e suite, which
   // asserts zero non-GET requests against a local build.
-  expect(unexpectedHosts).toEqual([]);
+  expect(offOrigin).toEqual([]);
 });
 
 test('the deployed zh scanner produces a report too', async ({ page }) => {
@@ -125,9 +120,10 @@ test('production sends the hardening headers from public/_headers', async ({ req
   expect(headers['content-security-policy']).toContain("default-src 'self'");
   expect(headers['content-security-policy']).toContain("script-src 'self' 'wasm-unsafe-eval'");
   expect(headers['content-security-policy']).toContain("frame-ancestors 'none'");
-  // The edge-injected analytics beacon must stay allowed, or every visitor's
-  // console fills with a CSP violation for a script the origin itself added.
-  expect(headers['content-security-policy']).toContain('https://static.cloudflareinsights.com');
+  // No host beyond 'self' anywhere in the policy. Written as an assertion on
+  // the header text because the request-level check above only sees hosts a
+  // page actually contacted; this one fails even if the third party is idle.
+  expect(headers['content-security-policy']).not.toMatch(/https?:\/\//);
   expect(headers['x-content-type-options']).toBe('nosniff');
   expect(headers['referrer-policy']).toBe('strict-origin-when-cross-origin');
 });

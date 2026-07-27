@@ -14,7 +14,8 @@
     "preview": "astro preview",
     "test": "vitest run",
     "e2e": "playwright test",
-    "smoke": "playwright test --config=playwright.smoke.config.ts"
+    "smoke": "playwright test --config=playwright.smoke.config.ts",
+    "sweep": "vitest run --config=vitest.sweep.config.ts"
   },
   "dependencies": {
     "@astrojs/react": "^6.0.1",
