@@ -52,9 +52,14 @@
 # updates (updateViaCache defaults to 'imports'), so this is defence in depth
 # rather than the thing that makes updates work.
 #
-# Spelled out as max-age=0 + must-revalidate rather than `no-cache`: Cloudflare
-# silently ignored the bare `no-cache` form here — the deployed response kept
-# its default max-age=14400 — while the same file's /_astro/* rule applied
-# fine. Asserted in tests/smoke/prod.spec.ts so it cannot go quiet again.
+# Cloudflare honours the directives but keeps its own max-age: this rule asks
+# for `public, max-age=0, must-revalidate` and the deployed response is
+# `public, max-age=14400, must-revalidate`. So the revalidation part lands and
+# the freshness window does not. Asserted on must-revalidate in
+# tests/smoke/prod.spec.ts, which is the part under our control.
+#
+# Header changes take a few minutes to reach every edge, so read this file's
+# effects from a fresh deploy rather than from the first curl after one — the
+# stale response looks exactly like a rule that was ignored.
 /sw.js
   Cache-Control: public, max-age=0, must-revalidate

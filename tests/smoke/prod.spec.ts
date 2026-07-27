@@ -148,8 +148,11 @@ test('after one visit the deployed site reloads and scans with the network cut',
 test('the service worker script is never served from a stale cache', async ({ request }) => {
   const res = await request.get('/sw.js');
   expect(res.status()).toBe(200);
-  // Cloudflare dropped a bare `no-cache` here without a word; this catches the
-  // rule going quiet again after a config or platform change.
+  // Only must-revalidate: Cloudflare keeps its own max-age whatever the rule
+  // asks for, so asserting the full value would pin the platform's default
+  // rather than our intent. Not load-bearing either way — browsers bypass the
+  // HTTP cache when checking a worker script for updates — but a rule that
+  // quietly stops applying should fail here rather than go unnoticed.
   expect(res.headers()['cache-control']).toContain('must-revalidate');
 });
 
