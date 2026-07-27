@@ -76,7 +76,9 @@ pnpm dev        # local dev server
 pnpm build      # static build to dist/
 pnpm preview    # serve the built dist/ locally
 pnpm test       # vitest unit tests (all passing)
-pnpm e2e        # playwright e2e tests (all passing)
+pnpm e2e        # playwright e2e tests against a local build (all passing)
+pnpm smoke      # playwright tests against the live site, run after every deploy
+pnpm sweep      # false-positive measurement; needs CORPUS_DIR (see below)
 ```
 
 ## Regenerating test fixtures
@@ -96,6 +98,38 @@ Fixtures are count-stable (regenerating produces PDFs with the same findings
 and the same per-category counts) but not byte-reproducible — PyMuPDF embeds
 a `CreationDate` timestamp in each saved PDF, so the file bytes (and hashes)
 differ between runs even though the content and detected findings don't.
+
+## Measuring false positives against real documents
+
+Every fixture was built to trip a detector, which proves the detectors fire and
+says nothing about how often they fire on documents nobody designed to be
+caught. That second number is the one that decides whether a visitor's first
+scan reads as a useful tool or as a smoke alarm, so it is measured rather than
+assumed:
+
+```bash
+uv run python scripts/fetch_corpus.py /tmp/corpus   # ~48 real PDFs, a few minutes
+CORPUS_DIR=/tmp/corpus pnpm sweep
+```
+
+The corpus is not committed (other people's documents, tens of megabytes); the
+script rebuilds an equivalent one from public sources — recent arXiv preprints
+across seven subject areas, four IRS forms and an RFC. arXiv is queried for the
+newest submissions, so a re-run reproduces the method rather than the identical
+files.
+
+`pnpm sweep` prints per-category hit rates and every finding, and asserts only
+one thing: that no real document made the scanner throw. It is a measurement,
+not a gate, and it is not part of `pnpm test` — it needs a corpus that is not
+in the repo.
+
+On a 48-document corpus (2026-07-28): 31 of 48 clean, `tiny_font` on 16 files
+(scaled-down charts, which is why that category is labelled high false-positive
+risk and collapsed in the report), `near_white_text` on 2 (one of them
+genuinely invisible text — 0.01pt white runs in an IRS publication),
+`embedded_files` on 2 (an RFC carrying its own XML source, an IRS publication
+carrying Distiller settings), and nothing at all from the other seven
+categories.
 
 The two "try an example" demo files under `public/demo/` are generated the
 same way — `uv run --with pymupdf python scripts/make_demo_pdfs.py` — and

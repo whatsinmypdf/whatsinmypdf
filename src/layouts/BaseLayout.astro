@@ -49,5 +49,11 @@ const zhHref = new URL(zhPath, Astro.site);
     <Header pathname={pathname} locale={locale} />
     <main class="flex-1"><slot /></main>
     <Footer locale={locale} />
+    {/* An import, not a body: Astro inlines a small inline script (adding a
+        CSP hash to maintain) but emits an imported module as a /_astro/ file,
+        which script-src 'self' already covers. */}
+    <script>
+      import '@/lib/registerSW';
+    </script>
   </body>
 </html>

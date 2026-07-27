@@ -21,6 +21,12 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
       documents, because the scan never leaves your browser in the first place.
     </p>
     <p class="mt-4 text-muted-foreground">
+      The site does store something in your browser: a service worker keeps a copy of its own
+      pages, scripts and the scan engine, so that it keeps working when you are offline. That
+      cache holds this site's files and nothing else — your PDF is never in it, because your PDF
+      is never fetched over the network in the first place. Clearing site data removes it.
+    </p>
+    <p class="mt-4 text-muted-foreground">
       If you have questions about this policy, open an issue on the project's GitHub repository.
     </p>
   </section>

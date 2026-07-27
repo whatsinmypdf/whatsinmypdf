@@ -9,11 +9,16 @@
 # level, and tests/smoke/prod.spec.ts asserts a live scan contacts no host but
 # this one. Re-enabling any third party means changing that test on purpose.
 #
-# The script-src and style-src hashes below cover Astro's own inline
-# hydration boot scripts and its astro-island CSS reset — these are the only
-# inline <script>/<style> tags this build emits (verified against dist/*.html
-# for the 2026-07-16 review, P1-8). They are framework runtime output, not
-# authored content, so they only change if the Astro version changes.
+# The script-src and style-src hashes below cover every inline <script>/<style>
+# this build emits: Astro's hydration boot scripts, its astro-island CSS reset,
+# and the service-worker registration from src/lib/registerSW.ts (Astro inlines
+# scripts that small regardless of whether they are written inline or imported).
+# The first two change only with the Astro version; the third changes whenever
+# registerSW.ts does.
+#
+# Nobody has to remember that: tests/e2e/csp.spec.ts recomputes the hashes from
+# dist/ and fails the build when this list does not match, which is cheaper
+# than finding out from a visitor's console.
 #
 # If a future `pnpm build` fails the CSP-header e2e check (or you see
 # "Refused to execute inline script/style" in the browser console), Astro's
@@ -24,7 +29,7 @@
 # script-src only governs script elements that would actually execute, and
 # a non-JS type never executes as a script.
 /*
-  Content-Security-Policy: default-src 'self'; connect-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-QzWFZi+FLIx23tnm9SBU4aEgx4x8DsuASP07mfqol/c=' 'sha256-SaCkFfPruIdTXT8/97JArQmGxiJAL2o4bBDvSgJ5y3Q='; style-src 'self' 'sha256-vv9IoKo7BSLbWcUHr3tNmfNVmm5L/9Cfn2H6LMk7/ow='; img-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'
+  Content-Security-Policy: default-src 'self'; connect-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-QzWFZi+FLIx23tnm9SBU4aEgx4x8DsuASP07mfqol/c=' 'sha256-SaCkFfPruIdTXT8/97JArQmGxiJAL2o4bBDvSgJ5y3Q=' 'sha256-4hzqoQq9XNzzcfs2Ouj753t4jHey8jYdDaMM/w0Jqt0='; style-src 'self' 'sha256-vv9IoKo7BSLbWcUHr3tNmfNVmm5L/9Cfn2H6LMk7/ow='; img-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=()
@@ -40,3 +45,9 @@
 # anyway — so it is now immutable. Verified by tests/smoke/prod.spec.ts.
 /_astro/*
   Cache-Control: public, max-age=31536000, immutable
+
+# The service worker script decides how long every other cached thing lives, so
+# a stale copy of it outlives a deploy in a way nothing else can. Always
+# revalidate.
+/sw.js
+  Cache-Control: no-cache
