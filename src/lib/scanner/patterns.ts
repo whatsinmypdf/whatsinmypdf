@@ -109,6 +109,24 @@ export const INJECTION_PATTERNS: InjectionPattern[] = [
 // finds one and assumes the authors planted it will accuse them of misconduct
 // for a string the conference put there — which has already happened to real
 // submissions, in public.
+//
+// Why this is matched by wording and not by structure, having tried: the
+// documents in question do not hide their text by any of the usual means. No
+// near-white fill, no invisible render mode, no covering shape — the visible
+// line is simply not the line in the text layer. That is achieved by embedding
+// a separate single-character font subset for almost every character, each one
+// free to draw one shape while declaring a different character, and each one
+// perfectly self-consistent. There is no contradiction anywhere in the font
+// tables to find, because the contradiction is between a glyph outline and the
+// character it claims to be, and an outline is not metadata.
+//
+// A detector keyed on "one glyph id mapped to several code points" looks like
+// it works and does not: font *names* repeat across subsets (one name covering
+// 128 distinct font objects in one document, and every chart in an ordinary
+// paper embedding its own same-named subset), so keying by name invents
+// collisions on innocent files, and keying by font object identity finds
+// nothing anywhere. Separating drawn shape from declared character needs shape
+// comparison — OCR by another name — which is a different project.
 // Matched against the text with all whitespace removed, which is why these
 // read as run-on strings. Word spacing in a PDF is a cursor movement as often
 // as it is a space character, and reassembling a line from runs mangles it in
