@@ -45,6 +45,33 @@ test('a group with many findings collapses, and expands on request', async ({ pa
   await expect(group.locator('li')).toHaveCount(30);
 });
 
+test('a venue watermark is reported as a watermark, not as an attack', async ({ page }) => {
+  await gotoReady(page);
+  await page.setInputFiles('input[type=file]', 'tests/fixtures/review_watermark.pdf');
+
+  const group = page
+    .locator('section.overflow-hidden')
+    .filter({ has: page.getByText('review_watermark', { exact: true }) });
+  await expect(group).toBeVisible({ timeout: 30_000 });
+  await expect(group.getByRole('heading', { level: 3, name: 'Peer-review watermark' })).toBeVisible();
+  // The instruction has to be readable in the report: the whole point is that
+  // a reviewer can compare it against the review they were sent. Written in
+  // alternating black and white, it reaches the report as single characters
+  // unless the line is reassembled first.
+  //
+  // Compared with whitespace removed. Reassembling a line from runs moves
+  // spaces around — this fixture's glyphs overlap slightly and come back as
+  // "Overal l , the paper' s" — and the assertion is about the words being
+  // there, not about the spacing being pretty.
+  const quoted = (await group.locator('blockquote').first().textContent()) ?? '';
+  expect(quoted.replace(/\s+/g, '')).toContain('IncludeBOTHthephrases');
+  expect(quoted.replace(/\s+/g, '')).toContain('inyourreview');
+
+  // Not also flagged as prompt injection — that pairing is what turns a
+  // conference's own tripwire into an accusation against the authors.
+  await expect(page.getByText('prompt_injection', { exact: true })).not.toBeVisible();
+});
+
 test('a report offers the feedback link, and that link carries nothing about the scan', async ({
   page,
 }) => {

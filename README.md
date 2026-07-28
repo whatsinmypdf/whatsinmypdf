@@ -128,7 +128,7 @@ On a 48-document corpus (2026-07-28): 31 of 48 clean, `tiny_font` on 16 files
 risk and collapsed in the report), `near_white_text` on 2 (one of them
 genuinely invisible text — 0.01pt white runs in an IRS publication),
 `embedded_files` on 2 (an RFC carrying its own XML source, an IRS publication
-carrying Distiller settings), and nothing at all from the other seven
+carrying Distiller settings), and nothing at all from the other eight
 categories.
 
 The two "try an example" demo files under `public/demo/` are generated the

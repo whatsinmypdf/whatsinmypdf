@@ -57,6 +57,11 @@ const CATEGORIES_ZH: Record<CategoryId, Pick<CategoryInfo, 'title' | 'explanatio
     explanation:
       '文本匹配了已知的、试图操纵 AI 审阅者或摘要工具的模式，例如让它忽略原有指令或给出正面结论。这一发现仅供参考，并非定论，一篇讨论提示词注入的论文可能会合理地引用这类文字，需结合上下文判断。',
   },
+  review_watermark: {
+    title: '同行评审水印',
+    explanation:
+      '一段隐藏文字，要求 AI 审稿人在评审意见里嵌入固定短语。部分会议会给每一篇投稿都加上一条，这样模型代写的评审一旦复现这些短语就会暴露——也就是说，这一项出现并不说明作者做了什么，作者通常根本不知道它的存在。采用这种做法的会议，一般也会说明：仅用于暴露 AI 使用的水印无需处理，而试图影响录用结论的隐藏文字则需要上报。本项按指令的结构形态匹配，所以它的含义是「看起来像评审水印」，不是「证明是评审水印」。',
+  },
 };
 
 export function getCategories(locale: Locale): Record<CategoryId, CategoryInfo> {

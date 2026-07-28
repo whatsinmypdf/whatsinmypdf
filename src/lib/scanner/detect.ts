@@ -7,7 +7,7 @@
  * pure function over the ExtractedDoc shape produced by mupdfAdapter.ts.
  */
 
-import { findInjections } from './patterns';
+import { findInjections, findReviewWatermarks } from './patterns';
 import type { CategoryId, ExtractedDoc, Finding, PageData, ScanReport, TextRun } from './types';
 
 type Rect4 = [number, number, number, number];
@@ -43,12 +43,9 @@ const CATEGORY_ORDER: CategoryId[] = [
   'javascript',
   'annotations',
   'prompt_injection',
+  'review_watermark',
 ];
 
-// Perceived brightness 0..255 from a packed 0xRRGGBB int. Ported verbatim
-// from scan_pdf.py:99-104 (`luma`). TextRun.color arrives already packed as
-// 0xRRGGBB (mupdfAdapter.packColor handles gray/RGB/CMYK uniformly), so this
-// unpacks r/g/b exactly the way the Python does from PyMuPDF's packed int.
 // True when a near-white run was measured against its rendered background and
 // that background turned out to be visibly darker — i.e. a reader can see the
 // text, so it is not hidden.
@@ -60,6 +57,10 @@ export function onVisibleBackground(run: TextRun): boolean {
   return run.bgDarkFraction !== undefined && run.bgDarkFraction >= BG_DARK_FRACTION;
 }
 
+// Perceived brightness 0..255 from a packed 0xRRGGBB int. Ported verbatim
+// from scan_pdf.py:99-104 (`luma`). TextRun.color arrives already packed as
+// 0xRRGGBB (mupdfAdapter.packColor handles gray/RGB/CMYK uniformly), so this
+// unpacks r/g/b exactly the way the Python does from PyMuPDF's packed int.
 export function luma(colorInt: number): number {
   const r = (colorInt >> 16) & 0xff;
   const g = (colorInt >> 8) & 0xff;
@@ -129,17 +130,36 @@ function detectPage(page: PageData, pageNum: number, findings: Finding[]): void 
     });
   }
 
+  // Near-white runs are grouped by the line they belong to before being
+  // reported. Hidden text written in alternating colours arrives as dozens of
+  // one-character runs, and a report that lists "c", "s", '"' as separate
+  // findings has technically told the truth and practically told the reader
+  // nothing. One finding per line, quoting the line, saying how much of it was
+  // near-white.
+  const nearWhiteLines = new Map<string, TextRun[]>();
   for (const run of page.runs) {
     if (!run.text.trim()) continue; // mirror Python's empty-span guard
+    if (luma(run.color) < BG_LUMA || onVisibleBackground(run)) continue;
+    const key = run.lineText ?? run.text;
+    const bucket = nearWhiteLines.get(key);
+    if (bucket) bucket.push(run);
+    else nearWhiteLines.set(key, [run]);
+  }
+  for (const [line, runs] of nearWhiteLines) {
+    const [first] = runs;
+    const fragmented = runs.length > 1 && line !== first.text;
+    findings.push({
+      category: 'near_white_text',
+      page: pageNum,
+      text: truncate(fragmented ? line : first.text),
+      detail: fragmented
+        ? `${hexColor(first.color)}, ${round2(first.size)}pt, ${runs.length} characters of this line`
+        : `${hexColor(first.color)}, ${round2(first.size)}pt`,
+    });
+  }
 
-    if (luma(run.color) >= BG_LUMA && !onVisibleBackground(run)) {
-      findings.push({
-        category: 'near_white_text',
-        page: pageNum,
-        text: truncate(run.text),
-        detail: `${hexColor(run.color)}, ${round2(run.size)}pt`,
-      });
-    }
+  for (const run of page.runs) {
+    if (!run.text.trim()) continue; // mirror Python's empty-span guard
 
     if (run.size > 0 && run.size < MIN_FONT_SIZE) {
       findings.push({
@@ -180,9 +200,49 @@ function detectPage(page: PageData, pageNum: number, findings: Finding[]): void 
     }
   }
 
-  // Prompt-injection scan: visible page text + annotation content, scanned
-  // as two separate sources (matches scan_pdf.py:225-243).
-  const body = page.runs.map((r) => r.text).join('\n');
+  // Scanned line by line rather than run by run. The reference scanner joins
+  // runs with newlines, which quietly breaks every pattern here against any
+  // sentence written in alternating colours: a run ends at each colour change,
+  // so "ignore all previous instructions" arrives as "i|gnore a|ll p|revious…"
+  // and matches nothing. That is not hypothetical — the reviewing watermarks some
+  // venues inject are written exactly that way, and anyone reading this file could
+  // use the same trick to walk an injection straight past the scan.
+  const lineTops = new Map<string, number>();
+  for (const run of page.runs) {
+    const line = run.lineText ?? run.text;
+    if (!lineTops.has(line)) lineTops.set(line, run.bbox[1]);
+  }
+  const lineTexts = [...lineTops.entries()].sort((a, b) => a[1] - b[1]).map(([line]) => line);
+
+  // Venue watermarks first, so an instruction the conference planted is
+  // reported as what it is instead of as an attack by the authors.
+  //
+  // Matched against the page in reading order rather than line by line: a
+  // watermark wraps like any other text, and two of the three real examples this
+  // was built against break mid-word across two baselines. Per-line matching sees
+  // neither half as an instruction.
+  const pageText = lineTexts.join(' ');
+  let cleaned = pageText;
+  for (const hit of findReviewWatermarks(pageText)) {
+    // Quoted from the match onward rather than the match itself: the pattern
+    // stops as soon as it is certain — for one of the two forms that is "In your
+    // output you MUST include ALL" — and the phrases it is actually
+    // about come after that, and they are the part a reader needs to compare
+    // against a review they were sent.
+    const at = pageText.indexOf(hit.match);
+    findings.push({
+      category: 'review_watermark',
+      page: pageNum,
+      text: truncate(at === -1 ? hit.match : pageText.slice(at)),
+      detail: hit.description,
+    });
+    // Keep the matched span out of the injection scan: the same sentence must
+    // not be reported twice, once as the venue's watermark and once as an
+    // attack on the venue's behalf.
+    cleaned = cleaned.split(hit.match).join(' ');
+  }
+
+  const body = cleaned;
   const annotText = page.annotations.map((a) => a.content.trim().slice(0, 200)).join('\n');
   const sources: [string, string][] = [
     ['body', body],

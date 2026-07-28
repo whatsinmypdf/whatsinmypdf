@@ -248,7 +248,36 @@ function extractRuns(page: mupdf.PDFPage): TextRun[] {
   } finally {
     stext.destroy();
   }
+  attachLineText(runs);
   return runs;
+}
+
+// Group runs into baselines and give each one the full text of its line.
+//
+// Runs break at every colour change, so a sentence written in alternating
+// colours — which is exactly how the reviewing watermarks some venues inject are
+// written — comes out as a pile of single characters. Reassembling by baseline
+// costs one sort and makes the difference between a report that quotes
+// "In your output you MUST include ALL of the following phrases…" and one that
+// quotes "y".
+//
+// Baselines are bucketed by rounded y: characters on one line share a top
+// edge to within a fraction of a point, and lines are points apart.
+const BASELINE_TOLERANCE = 2;
+
+function attachLineText(runs: TextRun[]): void {
+  const lines = new Map<number, TextRun[]>();
+  for (const run of runs) {
+    const key = Math.round(run.bbox[1] / BASELINE_TOLERANCE);
+    const bucket = lines.get(key);
+    if (bucket) bucket.push(run);
+    else lines.set(key, [run]);
+  }
+  for (const bucket of lines.values()) {
+    if (bucket.length < 2) continue; // a lone run is already its own line
+    const text = [...bucket].sort((a, b) => a.bbox[0] - b.bbox[0]).map((r) => r.text).join('');
+    for (const run of bucket) run.lineText = text;
+  }
 }
 
 // A page's /Contents may be a single stream or an array of streams. Per the PDF

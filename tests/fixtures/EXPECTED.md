@@ -34,6 +34,10 @@ re-verified ground truth, not aspiration).
 | `annotation.pdf` | 1 | `annotations: 1`, `prompt_injection: 2` | 3 |
 | `white_on_dark.pdf` | 0 | (none) | 0 |
 | `many_tiny.pdf` | 1 | `tiny_font: 30` | 30 |
+| `review_watermark.pdf` | 1 | `near_white_text: 1`, `review_watermark: 1` | 2 |
+| `review_watermark_variant.pdf` | 1 | `near_white_text: 1`, `review_watermark: 1` | 2 |
+| `review_watermark_prose.pdf` | 0 | (none) | 0 |
+| `injection_split_colour.pdf` | 1 | `near_white_text: 1`, `prompt_injection: 1` | 2 |
 
 Full per-category counts dict (all 10 categories + total), for exact assertion copy-paste:
 
@@ -163,3 +167,25 @@ behaviour this implementation deliberately does not share with it:
 - `many_tiny.pdf` — 30 runs at 2pt, standing in for a scaled-down chart. Used
   by the e2e suite to pin the report's collapse-and-expand behaviour; the
   counts agree with the reference scanner, only the rendering of them differs.
+
+- `review_watermark.pdf` — a peer-review watermark of the kind some conferences inject into
+  every submitted PDF, reproduced from three real submissions (their phrases
+  are not: those are unique per paper and belong to documents under review): 7.5pt at the foot of page 2, wrapping across two baselines,
+  characters alternating black and white. Reported as `review_watermark`, never
+  as `prompt_injection`: the conference planted it, and a reviewer who reads
+  "prompt injection" beside it accuses the authors of misconduct for a string
+  they did not write — which has already happened in public. The reference
+  scanner has no such category and, because it scans runs joined by newlines,
+  does not match the sentence at all.
+- `review_watermark_variant.pdf` — the same technique with different venue
+  phrasing, different phrases and grey-on-near-black instead of white-on-black.
+  Guards against the patterns having learned three specific files rather than
+  the shape of the instruction.
+- `review_watermark_prose.pdf` — negative control: ordinary *visible* prose
+  containing both halves of the frame ("include both the phrases" … "in your
+  review"). Must report nothing. An earlier pattern flagged it, which is why the
+  pattern now requires the phrases to be quoted.
+- `injection_split_colour.pdf` — negative control the other way: a genuine
+  author-inserted attack written with the same colour-splitting trick. Must be
+  `prompt_injection` and never `review_watermark`. Also the regression guard for
+  line reassembly — scanned run by run, this sentence matches nothing.

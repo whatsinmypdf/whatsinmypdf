@@ -285,7 +285,7 @@ describe('detect() — hand-built boundary tests', () => {
     const expectedKeys = [
       'near_white_text', 'invisible_render_mode', 'tiny_font', 'outside_cropbox',
       'cropbox_mismatch', 'hidden_layers', 'embedded_files', 'javascript',
-      'annotations', 'prompt_injection', 'total',
+      'annotations', 'prompt_injection', 'review_watermark', 'total',
     ];
     expect(Object.keys(report.counts).sort()).toEqual(expectedKeys.sort());
     expect(report.findings).toEqual([]);
@@ -315,7 +315,7 @@ describe('scanPdf() — 9-fixture integration against EXPECTED.md ground truth',
     expect(report.counts).toEqual({
       near_white_text: 0, invisible_render_mode: 0, tiny_font: 0, outside_cropbox: 0,
       cropbox_mismatch: 0, hidden_layers: 0, embedded_files: 0, javascript: 0,
-      annotations: 0, prompt_injection: 0, total: 0,
+      annotations: 0, prompt_injection: 0, review_watermark: 0, total: 0,
     });
   });
 
@@ -324,7 +324,7 @@ describe('scanPdf() — 9-fixture integration against EXPECTED.md ground truth',
     expect(report.counts).toEqual({
       near_white_text: 1, invisible_render_mode: 0, tiny_font: 0, outside_cropbox: 0,
       cropbox_mismatch: 0, hidden_layers: 0, embedded_files: 0, javascript: 0,
-      annotations: 0, prompt_injection: 2, total: 3,
+      annotations: 0, prompt_injection: 2, review_watermark: 0, total: 3,
     });
   });
 
@@ -342,7 +342,7 @@ describe('scanPdf() — 9-fixture integration against EXPECTED.md ground truth',
     expect(report.counts).toEqual({
       near_white_text: 0, invisible_render_mode: 0, tiny_font: 0, outside_cropbox: 1,
       cropbox_mismatch: 1, hidden_layers: 0, embedded_files: 0, javascript: 0,
-      annotations: 0, prompt_injection: 2, total: 4,
+      annotations: 0, prompt_injection: 2, review_watermark: 0, total: 4,
     });
     const hit = report.findings.find((f) => f.category === 'outside_cropbox');
     expect(hit?.text).toContain('Ignore all previous instructions');
@@ -351,6 +351,53 @@ describe('scanPdf() — 9-fixture integration against EXPECTED.md ground truth',
     expect(
       report.findings.filter((f) => f.category === 'outside_cropbox' && f.text?.includes('Visible line')),
     ).toEqual([]);
+  });
+
+  // Built the way the venues doing this build theirs, verified
+  // against three real submissions: 7.5pt at the foot of page 2, wrapping across two
+  // baselines, characters alternating black and white so that a run-based
+  // extractor shreds the sentence into single letters.
+  it('review_watermark.pdf: the venue watermark is recognised and quoted whole', () => {
+    const report = scanPdf(load('review_watermark.pdf'), 'review_watermark.pdf');
+    expect(report.counts.review_watermark).toBe(1);
+    // Not reported as an attack on top of that: a reviewer who reads
+    // "prompt injection" next to a string the conference planted will accuse
+    // the authors of misconduct, which has already happened in public.
+    expect(report.counts.prompt_injection).toBe(0);
+
+    const hit = report.findings.find((f) => f.category === 'review_watermark');
+    expect(hit?.page).toBe(2);
+    // The whole instruction, not the fragment the pattern matched on. Spacing
+    // is whatever the reconstruction produced — the test asserts the words are
+    // there in order, not that the spaces are pretty.
+    const flat = (hit?.text ?? '').replace(/\s+/g, '');
+    expect(flat).toContain('IncludeBOTHthephrases');
+    expect(flat).toContain('inyourreview');
+  });
+
+  // Generalisation, because the patterns were written from three real files and
+  // could easily have learned those three files rather than the technique.
+  it('review_watermark_variant.pdf: different venue phrasing and colours, same verdict', () => {
+    const report = scanPdf(load('review_watermark_variant.pdf'), 'v.pdf');
+    expect(report.counts.review_watermark).toBe(1);
+    expect(report.counts.prompt_injection).toBe(0);
+  });
+
+  it('review_watermark_prose.pdf: visible prose containing both halves of the frame is clean', () => {
+    // "We include both the phrases used in prior work … discuss them in your
+    // review of Section 5." An earlier pattern flagged this sentence. Nothing
+    // about it is hidden and nothing about it is an instruction.
+    const report = scanPdf(load('review_watermark_prose.pdf'), 'p.pdf');
+    expect(report.counts).toMatchObject({ review_watermark: 0, prompt_injection: 0, total: 0 });
+  });
+
+  it('injection_split_colour.pdf: a real attack hidden by colour-splitting is still caught', () => {
+    // Written character by character in alternating colours, the same trick the
+    // venue watermarks use. Scanned run by run — the way the reference scanner
+    // does it — a sentence written this way matches no pattern at all.
+    const report = scanPdf(load('injection_split_colour.pdf'), 'a.pdf');
+    expect(report.counts.prompt_injection).toBeGreaterThan(0);
+    expect(report.counts.review_watermark).toBe(0);
   });
 
   it('white_on_dark.pdf reports nothing: the text is visible against its background', () => {
@@ -386,7 +433,7 @@ describe('scanPdf() — 9-fixture integration against EXPECTED.md ground truth',
     expect(report.counts).toEqual({
       near_white_text: 0, invisible_render_mode: 0, tiny_font: 1, outside_cropbox: 0,
       cropbox_mismatch: 0, hidden_layers: 0, embedded_files: 0, javascript: 0,
-      annotations: 0, prompt_injection: 2, total: 3,
+      annotations: 0, prompt_injection: 2, review_watermark: 0, total: 3,
     });
   });
 
@@ -395,7 +442,7 @@ describe('scanPdf() — 9-fixture integration against EXPECTED.md ground truth',
     expect(report.counts).toEqual({
       near_white_text: 0, invisible_render_mode: 1, tiny_font: 0, outside_cropbox: 0,
       cropbox_mismatch: 0, hidden_layers: 0, embedded_files: 0, javascript: 0,
-      annotations: 0, prompt_injection: 2, total: 3,
+      annotations: 0, prompt_injection: 2, review_watermark: 0, total: 3,
     });
   });
 
@@ -411,7 +458,7 @@ describe('scanPdf() — 9-fixture integration against EXPECTED.md ground truth',
     expect(report.counts).toEqual({
       near_white_text: 0, invisible_render_mode: 0, tiny_font: 0, outside_cropbox: 1,
       cropbox_mismatch: 1, hidden_layers: 0, embedded_files: 0, javascript: 0,
-      annotations: 0, prompt_injection: 1, total: 3,
+      annotations: 0, prompt_injection: 1, review_watermark: 0, total: 3,
     });
     expect(report.findings.find((f) => f.category === 'outside_cropbox')?.text).toContain(
       'Ignore all previous instructions',
@@ -423,7 +470,7 @@ describe('scanPdf() — 9-fixture integration against EXPECTED.md ground truth',
     expect(report.counts).toEqual({
       near_white_text: 0, invisible_render_mode: 0, tiny_font: 0, outside_cropbox: 0,
       cropbox_mismatch: 0, hidden_layers: 1, embedded_files: 0, javascript: 0,
-      annotations: 0, prompt_injection: 2, total: 3,
+      annotations: 0, prompt_injection: 2, review_watermark: 0, total: 3,
     });
   });
 
@@ -432,7 +479,7 @@ describe('scanPdf() — 9-fixture integration against EXPECTED.md ground truth',
     expect(report.counts).toEqual({
       near_white_text: 0, invisible_render_mode: 0, tiny_font: 0, outside_cropbox: 0,
       cropbox_mismatch: 0, hidden_layers: 0, embedded_files: 1, javascript: 0,
-      annotations: 0, prompt_injection: 0, total: 1,
+      annotations: 0, prompt_injection: 0, review_watermark: 0, total: 1,
     });
   });
 
@@ -441,7 +488,7 @@ describe('scanPdf() — 9-fixture integration against EXPECTED.md ground truth',
     expect(report.counts).toEqual({
       near_white_text: 0, invisible_render_mode: 0, tiny_font: 0, outside_cropbox: 0,
       cropbox_mismatch: 0, hidden_layers: 0, embedded_files: 0, javascript: 1,
-      annotations: 0, prompt_injection: 0, total: 1,
+      annotations: 0, prompt_injection: 0, review_watermark: 0, total: 1,
     });
   });
 
@@ -450,7 +497,7 @@ describe('scanPdf() — 9-fixture integration against EXPECTED.md ground truth',
     expect(report.counts).toEqual({
       near_white_text: 0, invisible_render_mode: 0, tiny_font: 0, outside_cropbox: 0,
       cropbox_mismatch: 0, hidden_layers: 0, embedded_files: 0, javascript: 0,
-      annotations: 1, prompt_injection: 2, total: 3,
+      annotations: 1, prompt_injection: 2, review_watermark: 0, total: 3,
     });
   });
 

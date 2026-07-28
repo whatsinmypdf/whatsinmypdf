@@ -84,4 +84,11 @@ export const CATEGORIES: Record<CategoryId, CategoryInfo> = {
     falsePositiveRisk: 'low',
     strongSignal: false,
   },
+  review_watermark: {
+    title: 'Peer-review watermark',
+    explanation:
+      'Hidden text instructing an AI reviewer to work fixed phrases into its review. Some conferences add one to every submitted paper, so that a review written by a language model gives itself away when those phrases turn up in it — meaning a finding here says nothing about the authors, who usually have no idea it is there. Where a venue does this, its own guidance is normally that a watermark revealing AI use needs no action, while hidden text that tries to influence the decision does. Matched on the shape of the instruction, so read it as "looks like a reviewing watermark", not as proof of one.',
+    falsePositiveRisk: 'low',
+    strongSignal: false,
+  },
 };
