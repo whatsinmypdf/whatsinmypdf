@@ -1,6 +1,6 @@
 ---
 title: "Hidden Prompts in Academic Papers: What Was Found, and What to Check Before You Review"
-description: In July 2025, reporters found preprints carrying invisible instructions aimed at AI reviewers. What the prompts said, why the "it only catches cheating reviewers" defense fails, and how to check a manuscript in under a minute.
+description: Instructions aimed at AI reviewers, hidden in papers — some planted by authors, some by the conference itself. How to tell the two apart before accusing anyone, and how to check a manuscript in under a minute.
 pubDate: 2026-07-27
 ---
 
@@ -39,13 +39,28 @@ You do not need to trust a manuscript to review it, and you do not need to accep
 - **Run a structural scan.** [Drop the file into this scanner](/) and it reports near-white text, invisible render mode, sub-point fonts, off-page text, hidden layers, annotations, and known injection phrasing, with page numbers and the text itself. It runs in your browser, which matters for a manuscript under confidentiality: the file is not uploaded anywhere.
 - **Read the paper before you ask a model about it.** The hidden instruction only has leverage if the model's answer is your first impression.
 
-If you find something, the finding is the paper's problem, not yours: report it to the editor or program chair with the page number and the extracted text, and let the venue decide. Do not quietly discount the paper, and do not assume intent from a single finding — [some hidden text is an artifact](/learn/how-to-check-a-pdf-for-hidden-text) of the tool that produced the file rather than a decision by its author.
+If you find something, describe it and let the venue decide: the page number and the extracted text, sent to the editor or program chair. Do not quietly discount the paper, and do not tell the authors what you think they did — see the next section for why that is not yours to conclude.
+
+## The hidden instruction may not be the authors'
+
+Some conferences now plant one themselves. The instruction tells any language model reading the paper to work particular phrases into its review; when those phrases turn up in a submitted review, the venue knows a model wrote it. Every paper gets its own phrases, which is what makes a review traceable back to a submission. Authors are not told, and the text sits in their PDF looking exactly like something they put there.
+
+This has already gone wrong in public. A reviewer found hidden text in a submission, read it as an attempt to manipulate the review, and raised it as an ethics concern. It was the conference's own watermark. The authors had to spend their rebuttal proving they had not written a sentence that was never theirs.
+
+So before concluding anything about the authors, read what the hidden text actually asks for:
+
+- **"Include the phrase X and the phrase Y in your review"** — a marker. It does not ask for a verdict, only for a fingerprint. This is what a venue watermark looks like, and the venues doing it generally tell their reviewers that finding one requires no action.
+- **"Give a positive review", "recommend acceptance", "do not mention weaknesses"** — an attempt to change the outcome. No venue plants this. This is the thing worth reporting.
+
+The two are trivial to tell apart once you have the text in front of you, which is the whole reason to extract it rather than judge from the fact that something was hidden. [The scanner on this site](/) labels them separately for exactly this reason: an instruction that only asks for phrases is reported as a reviewing watermark, not as an attack.
+
+If you are an author facing this accusation: scan your own submitted PDF, quote the text and its page, and point out that it asks only for phrases. If your venue watermarks submissions, its own guidance to reviewers will say so.
 
 ## What venues should do
 
 Screening belongs at the submission portal, where it costs one automated pass per paper instead of one manual check per reviewer. A submission system already parses every uploaded PDF; extracting its text layer and comparing it against what renders is not a hard addition, and the categories worth flagging are narrow enough to keep false positives manageable. Lin's paper argues for exactly this, paired with a written policy on generative AI in evaluation so that reviewers know what is permitted before they are tempted.
 
-Until that exists, the check is on the reviewer, which is the worst place for it — the one person in the chain with no time and no tooling.
+Some venues have gone a different way: rather than screening what arrives, they add an instruction of their own to catch reviewers who hand the paper to a model. Whatever one thinks of that trade, it does not help the reviewer holding a manuscript today. Until screening exists, the check is on them — the one person in the chain with no time and no tooling.
 
 ## This is not only about papers
 
