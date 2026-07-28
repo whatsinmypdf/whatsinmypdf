@@ -26,12 +26,32 @@ at the edge by a zone-level setting — that setting is off, and
 `tests/smoke/prod.spec.ts` asserts that a live scan on the deployed site
 contacts no host but its own origin.
 
-## License
+## Licensing
 
-AGPL-3.0-or-later. This is required because the scanner bundles mupdf's WASM
-build, and mupdf itself is AGPL-licensed — any product built on top of it
-(including this site) must be distributed under a compatible copyleft license.
-See `LICENSE`.
+The site as distributed is **AGPL-3.0-or-later**. That is not a preference: it
+bundles mupdf's WASM build, mupdf is AGPL, and anything shipping it inherits the
+obligation. See `LICENSE`.
+
+The detection engine is **dual-licensed, `Apache-2.0 OR AGPL-3.0-or-later`**:
+
+- `src/lib/scanner/detect.ts` — the detectors
+- `src/lib/scanner/patterns.ts` — injection and watermark patterns
+- `src/lib/scanner/categories.ts` — category definitions
+- `src/lib/scanner/types.ts` — the data model
+
+Those four import nothing from mupdf, directly or transitively, which is a
+design constraint rather than an accident: `detect.ts` is a pure function over
+the `ExtractedDoc` shape, and every line that touches a PDF lives in
+`mupdfAdapter.ts` on the other side of that seam. Because they carry no mupdf
+code, they carry no mupdf obligation, and they are offered under Apache-2.0 as
+well for anyone who wants the detection logic without the parser. See
+`LICENSE-APACHE`. The dependency direction is one-way: the adapter uses the
+engine, never the reverse.
+
+If you ship mupdf yourself, you are in AGPL territory regardless of this file,
+and Artifex sells a commercial mupdf licence for exactly that situation.
+
+Contributions: see `CONTRIBUTING.md`. Nothing to sign.
 
 ## Relationship to the reference scanner
 

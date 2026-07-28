@@ -1,3 +1,13 @@
+// SPDX-License-Identifier: Apache-2.0 OR AGPL-3.0-or-later
+//
+// Dual-licensed, unlike the rest of this repository. This module is part of the
+// detection engine, which imports nothing from mupdf — directly or transitively
+// — and so carries none of mupdf's AGPL obligations on its own. The site as
+// distributed is still AGPL-3.0-or-later, because it ships mupdf; this file may
+// also be used under Apache-2.0 by anyone who does not.
+//
+// See README.md, "Licensing".
+
 import type { CategoryId } from './types';
 
 export interface CategoryInfo {
