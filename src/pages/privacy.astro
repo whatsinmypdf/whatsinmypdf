@@ -27,6 +27,15 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
       is never fetched over the network in the first place. Clearing site data removes it.
     </p>
     <p class="mt-4 text-muted-foreground">
+      There is one more case, and it is the only time anything read out of your file is written
+      anywhere. Switching the site's language loads a different page, which would otherwise throw
+      away a report you are in the middle of reading, so clicking that link hands the report to
+      the next page through session storage — private to this tab, erased when the tab closes,
+      and never sent anywhere. The page that receives it deletes it before it draws anything. It
+      is written only by that click: scan a file and never switch languages and nothing about it
+      is stored at all.
+    </p>
+    <p class="mt-4 text-muted-foreground">
       If you have questions about this policy, open an issue on the project's GitHub repository.
     </p>
   </section>

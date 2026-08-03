@@ -26,6 +26,38 @@ const DEMO_FILES = [
   },
 ];
 
+// Carrying a report across the language switch.
+//
+// Switching language is a real navigation (/ ↔ /zh, two server-rendered pages),
+// so the island remounts and a scan the visitor waited twenty seconds for is
+// gone. The report is the only thing worth carrying over, and it travels
+// through sessionStorage: same tab, same origin, never sent anywhere.
+//
+// The window it exists in is deliberately one page load wide. It is written
+// only by a click on the language link — not when a scan finishes, not on any
+// other navigation — and the page that reads it deletes it before rendering.
+// A scan the visitor never switches languages on stores nothing at all. This
+// is the one moment anything derived from a PDF is written to browser storage,
+// and /privacy says so.
+const HANDOFF_KEY = 'whatsinmypdf:lang-handoff';
+
+function takeHandoff(): ScanReport | null {
+  try {
+    const raw = sessionStorage.getItem(HANDOFF_KEY);
+    if (raw === null) return null;
+    sessionStorage.removeItem(HANDOFF_KEY);
+    const report = JSON.parse(raw) as ScanReport;
+    // Anything half-written or hand-edited must land on the dropzone rather
+    // than take the page down on the first property access.
+    return typeof report?.fileName === 'string' && Array.isArray(report?.findings)
+      ? report
+      : null;
+  } catch {
+    // No sessionStorage (private mode, disabled storage) or unparseable value.
+    return null;
+  }
+}
+
 type State =
   | { phase: 'idle' }
   | { phase: 'loading'; fileName: string }
@@ -61,6 +93,38 @@ export default function Scanner({ locale = 'en' }: { locale?: Locale }) {
   useEffect(() => {
     if (state.phase === 'done') reportHeadingRef.current?.focus();
   }, [state.phase]);
+
+  // Restore on mount rather than in the useState initializer: this component is
+  // server-rendered and then hydrated, so an initial state that differs between
+  // the two is a hydration mismatch.
+  useEffect(() => {
+    const report = takeHandoff();
+    if (report) setState({ phase: 'done', report });
+  }, []);
+
+  // The language link lives in the Astro-rendered header, outside this tree, so
+  // the handoff is written from a document-level listener rather than an onClick.
+  const stateRef = useRef(state);
+  stateRef.current = state;
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      // A modified click opens a new tab. Chrome copies sessionStorage into
+      // tabs opened that way, so writing here would plant the report in a tab
+      // the visitor did not ask to see it in, and leave it behind in this one.
+      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      if (!(e.target as Element | null)?.closest?.('[data-lang-switch]')) return;
+      const cur = stateRef.current;
+      if (cur.phase !== 'done') return;
+      try {
+        sessionStorage.setItem(HANDOFF_KEY, JSON.stringify(cur.report));
+      } catch {
+        // Storage blocked or full: the language switch still works, the
+        // report is just not carried over.
+      }
+    };
+    document.addEventListener('click', onClick, true);
+    return () => document.removeEventListener('click', onClick, true);
+  }, []);
 
   const scan = useCallback(
     async (file: File) => {

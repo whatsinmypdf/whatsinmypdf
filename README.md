@@ -67,13 +67,25 @@ output rather than the original plan's assumptions.
 
 One divergence is deliberate. `near_white_text` here also looks at what is
 painted *behind* the text: for pages containing near-white runs, the adapter
-renders the page and measures how dark the pixels under each run are, and a run
-sitting on a visibly darker background is not reported. The reference script
-compares text colour alone, which means it flags every white-on-dark form
-header, table header row and figure label as hidden text. On a 48-document
-corpus of real papers and government forms that accounted for all 170
-near-white findings; with the background check, 2 documents still report, one
-of them genuinely invisible text (0.01pt white runs in an IRS publication).
+renders the page and measures how much of the area under each run is paint
+rather than paper, and a run sitting on a painted background is not reported.
+The reference script compares text colour alone, which means it flags every
+white-on-dark form header, table header row and figure label as hidden text. On
+a 48-document corpus of real papers and government forms (2026-08-03) that
+accounted for 46 near-white findings across 7 documents; with the background
+check, 1 document still reports, and its findings are genuinely invisible text
+(0.01pt white runs in an IRS publication).
+
+What counts as "painted" is a threshold, and it was wrong once in a way worth
+recording. It was set at gray 200 on the assumption that a fill behind white
+text would be a dark one. The common case is the opposite: the pastel green and
+pink boxes that diagramming tools produce land at gray 190–215, so white labels
+inside them — perfectly legible, in the middle of a figure — were reported as
+hidden text. 215 puts the line between paint and paper instead, which is the
+distinction the check was always trying to draw. It still sits well below
+`BG_LUMA` (240), so white on a near-white fill, which is a real hiding
+technique, keeps being reported.
+
 Rendering is bounded: only pages that contain near-white text are rendered, at
 most 40 per document, and any failure leaves the runs unmeasured and reported
 as before. See `tests/sweep/` for the measurement harness.
@@ -143,13 +155,12 @@ one thing: that no real document made the scanner throw. It is a measurement,
 not a gate, and it is not part of `pnpm test` — it needs a corpus that is not
 in the repo.
 
-On a 48-document corpus (2026-07-28): 31 of 48 clean, `tiny_font` on 16 files
+On a 48-document corpus (2026-08-03): 30 of 48 clean, `tiny_font` on 17 files
 (scaled-down charts, which is why that category is labelled high false-positive
-risk and collapsed in the report), `near_white_text` on 2 (one of them
-genuinely invisible text — 0.01pt white runs in an IRS publication),
-`embedded_files` on 2 (an RFC carrying its own XML source, an IRS publication
-carrying Distiller settings), and nothing at all from the other eight
-categories.
+risk and collapsed in the report), `near_white_text` on 1 (genuinely invisible
+text — 0.01pt white runs in an IRS publication), `embedded_files` on 2 (an RFC
+carrying its own XML source, an IRS publication carrying Distiller settings),
+and nothing at all from the other eight categories.
 
 The two "try an example" demo files under `public/demo/` are generated the
 same way — `uv run --with pymupdf python scripts/make_demo_pdfs.py` — and

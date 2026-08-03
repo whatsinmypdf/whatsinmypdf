@@ -55,6 +55,56 @@ test('scanning white_text.pdf through the zh scanner renders zh category titles'
   );
 });
 
+test('a report survives the language switch, and is not left in storage', async ({ page }) => {
+  await gotoReady(page, '/');
+  await page.setInputFiles('input[type=file]', 'tests/fixtures/white_text.pdf');
+
+  const enGroup = page
+    .locator('section.overflow-hidden')
+    .filter({ has: page.getByText('near_white_text', { exact: true }) });
+  await expect(enGroup).toBeVisible({ timeout: 30_000 });
+  // Nothing is written while a report merely sits on screen — only the click
+  // on the language link puts it there.
+  expect(await page.evaluate(() => sessionStorage.length)).toBe(0);
+
+  await page.getByRole('link', { name: 'Switch to Chinese' }).click();
+  await expect(page).toHaveURL(/\/zh$/);
+
+  // Same report, now in Chinese, without re-picking the file.
+  const zhGroup = page
+    .locator('section.overflow-hidden')
+    .filter({ has: page.getByText('near_white_text', { exact: true }) });
+  await expect(zhGroup).toBeVisible({ timeout: 30_000 });
+  await expect(zhGroup.getByRole('heading', { level: 3, name: '近白色文字' })).toBeVisible();
+  // The report's own metadata row, not the "scanned:" line above it — both
+  // carry the name, and only this one comes from the report object itself.
+  await expect(page.getByRole('definition').filter({ hasText: 'white_text.pdf' })).toBeVisible();
+
+  // The page that read the handoff deleted it. This is the assertion that
+  // keeps /privacy true: text pulled out of someone's PDF must not outlive
+  // the navigation it was carried across.
+  expect(await page.evaluate(() => sessionStorage.length)).toBe(0);
+
+  // And back again, so the restored report can itself be handed over.
+  await page.getByRole('link', { name: '切换到 English' }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(
+    page
+      .locator('section.overflow-hidden')
+      .filter({ has: page.getByText('near_white_text', { exact: true }) })
+      .getByRole('heading', { level: 3, name: 'Near-white text' }),
+  ).toBeVisible({ timeout: 30_000 });
+});
+
+test('the language switch carries nothing when no scan has run', async ({ page }) => {
+  await gotoReady(page, '/');
+  await page.getByRole('link', { name: 'Switch to Chinese' }).click();
+  await expect(page).toHaveURL(/\/zh$/);
+  await page.waitForFunction(() => !document.querySelector('astro-island')?.hasAttribute('ssr'));
+  await expect(page.locator('input[type=file]')).toBeAttached();
+  expect(await page.evaluate(() => sessionStorage.length)).toBe(0);
+});
+
 test('a missing zh path serves the bilingual 404 page', async ({ page }) => {
   // Static hosting (astro preview and Cloudflare Pages alike) falls back to
   // the single root 404.html for every miss, /zh/* included — so that page

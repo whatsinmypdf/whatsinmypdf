@@ -36,8 +36,11 @@ const otherLangName = otherLocale === 'zh' ? 'Chinese' : 'English';
           {item.label}
         </a>
       ))}
+      <!-- data-lang-switch: the scanner island watches for a click on this
+           link so a report on screen survives the navigation. See Scanner.tsx. -->
       <a
         href={otherHref}
+        data-lang-switch
         class="rounded border border-border px-2 py-1 font-mono text-xs font-medium text-muted-foreground transition-colors hover:border-primary/60 hover:text-foreground"
         aria-label={`${t.nav.switchTo} ${otherLangName}`}
       >

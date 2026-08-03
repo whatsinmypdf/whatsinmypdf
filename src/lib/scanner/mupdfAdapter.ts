@@ -140,10 +140,21 @@ function transformRect(r: Rect4, m: mupdf.Matrix): Rect4 {
 // tall, which is enough to tell a white page from a dark figure without
 // rendering anything close to full quality.
 const BG_SAMPLE_SCALE = 1;
-// A sampled pixel this dark or darker is "clearly not a near-white background".
-// Deliberately below BG_LUMA (240): a #F5F5F5 page must still read as white,
-// or white-on-very-light-grey — a real hiding technique — would be suppressed.
-const BG_DARK_PIXEL_LUMA = 200;
+// A sampled pixel this dark or darker is "paint someone put there", as opposed
+// to paper. The job of this number is to separate a page from a fill, not light
+// from dark, and it was set to 200 on the assumption that a fill behind white
+// text would be a dark one. Pastel fills are the common case instead: the light
+// green and pink boxes that diagramming tools give you render at gray 190–215,
+// so every white label inside one was reported as hidden text. Measured across
+// 176 near-white runs in a paper carrying both — figure labels on pastel fills
+// and a genuine white-on-white watermark — 215 suppresses all 150 figure runs
+// with the nearest at 0.32 against a 0.1 cutoff, and still reports the
+// watermark.
+//
+// It stays well below BG_LUMA (240) so that white on a near-white fill, which
+// is a real hiding technique, keeps being reported: #F5F5F5 (245) and #E0E0E0
+// (224) are both still "paper" by this test.
+const BG_DARK_PIXEL_LUMA = 215;
 // Rendering is the one expensive thing this scanner does, so it is bounded.
 // Beyond this many pages carrying near-white text in a single document, runs
 // are left unmeasured and their findings are reported unfiltered.
