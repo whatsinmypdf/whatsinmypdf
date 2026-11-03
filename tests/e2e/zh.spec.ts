@@ -9,6 +9,27 @@ async function gotoReady(page: Page, path: string): Promise<void> {
   await page.waitForFunction(() => !document.querySelector('astro-island')?.hasAttribute('ssr'));
 }
 
+test('default social cards name the site, the page, and the locale', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('meta[property="og:site_name"]')).toHaveAttribute('content', 'WhatsInMyPDF');
+  await expect(page.locator('meta[property="og:locale"]')).toHaveAttribute('content', 'en_US');
+  await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', 'https://whatsinmypdf.com/og.png');
+  await expect(page.locator('meta[property="og:image:width"]')).toHaveAttribute('content', '1200');
+  await expect(page.locator('meta[property="og:image:height"]')).toHaveAttribute('content', '630');
+  await expect(page.locator('meta[name="twitter:title"]')).toHaveAttribute(
+    'content',
+    'WhatsInMyPDF — Find hidden content in PDFs, free and local',
+  );
+  await expect(page.locator('meta[name="twitter:description"]')).toHaveAttribute(
+    'content',
+    'Scan any PDF for hidden text, invisible layers, and prompt-injection attempts aimed at AI reviewers. 100% local — files never leave your browser.',
+  );
+
+  await page.goto('/zh');
+  await expect(page.locator('meta[property="og:locale"]')).toHaveAttribute('content', 'zh_CN');
+  await expect(page.locator('meta[property="og:locale:alternate"]')).toHaveAttribute('content', 'en_US');
+});
+
 test('zh homepage renders with html[lang=zh-CN] and the zh hero text', async ({ page }) => {
   await gotoReady(page, '/zh');
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN');
@@ -114,6 +135,9 @@ test('a missing zh path serves the bilingual 404 page', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Page not found' })).toBeVisible();
   await expect(page.getByRole('heading', { name: '页面不存在' })).toBeVisible();
   await expect(page.getByRole('link', { name: '返回扫描器' })).toHaveAttribute('href', '/zh');
+  // /404 is a real file, so the URL itself is a 200. The page is noindex so
+  // that URL is not a soft 404 in the index. Missing paths still 404 above.
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex');
 });
 
 test('/zh/learn index lists every zh article', async ({ page }) => {
