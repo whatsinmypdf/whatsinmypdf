@@ -18,10 +18,10 @@
     "sweep": "vitest run --config=vitest.sweep.config.ts"
   },
   "dependencies": {
-    "@astrojs/react": "^6.0.1",
-    "@astrojs/sitemap": "^3.7.3",
+    "@astrojs/react": "^6.0.6",
+    "@astrojs/sitemap": "^3.7.4",
     "@tailwindcss/vite": "^4.3.2",
-    "astro": "^7.0.8",
+    "astro": "^7.4.5",
     "clsx": "^2.1.1",
     "lucide-react": "^1.24.0",
     "mupdf": "^1.28.0",
@@ -34,6 +34,6 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "typescript": "^7.0.2",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.12"
   }
 }
